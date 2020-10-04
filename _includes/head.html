@@ -11,7 +11,8 @@
   <link rel="alternate" type="application/rss+xml" title="{{ site.title }}" href="{{ "/feed.xml" | prepend: site.baseurl | prepend: site.url }}">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-  {% if site.porduction == 'yes' %}
+
+  {% if site.production %}
     {% include analytics.html %}
   {% endif %}
 </head>

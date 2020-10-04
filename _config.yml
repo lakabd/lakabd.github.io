@@ -23,5 +23,5 @@ author: L.Abderrahim
 markdown: kramdown
 
 # to activate/deactivate analytics.
-# put no when developping
+# comment this when developping
 production: yes
