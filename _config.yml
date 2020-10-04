@@ -21,3 +21,7 @@ author: L.Abderrahim
 
 # Build settings
 markdown: kramdown
+
+# to activate/deactivate analytics.
+# put no when developping
+production: yes
