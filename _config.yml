@@ -10,7 +10,7 @@ title: Abderrahim LAKBIR's Blog
 email: abderrahim.lakbir@etu.univ-lyon1.fr
 description: > # this means to ignore newlines until "baseurl:"
   Welcome to my blog.
-baseurl: "/blog" # the subpath of your site, e.g. /blog
+baseurl: "/" # the subpath of your site, e.g. /blog
 url: "https://lakabd.github.io" # the base hostname & protocol for your site
 
 github_username:  lakabd
