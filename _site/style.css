@@ -1,0 +1,93 @@
+.home-section {
+  position: relative;
+    font-size: 20px;
+    color: rgba(0,0,0,0.8);
+    line-height: 1.65;
+    font-family: 'calibri', sans-serif;
+    font-weight: 400;
+    margin-top: 1rem;
+    margin-bottom: .5rem;
+    line-height: 1.25;
+    text-rendering: optimizeLegibility;
+  }
+
+#profile {
+    float: left;
+    text-align: center;
+    padding: 30px 10px;
+    position: relative;
+    border-bottom: 1px solid #828282;
+  }
+  
+  .portrait {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+    border-radius: 60%;
+    object-fit: cover;
+  }
+  
+  .portrait-title h2 {
+    font-size: 1.45em;
+    font-weight: 300;
+    color: #000000;
+    margin: 20px 0 10px 0;
+  }
+  
+  .portrait-title h3 {
+    font-size: 1.25rem;
+    font-weight: 300;
+    color: rgba(0,0,0, 0.54);
+    margin: 0px 0 10px 0;
+  }
+
+  .col-1{
+      float: left;
+      width:300px;
+  }
+  .col-2{
+    width: 70%;
+    align-self: left;
+    text-align: left;
+    margin-top: 0px;
+    overflow: auto;
+    @media (width: 600px) {
+      width: auto;
+    }
+  }
+  .col-md-1{
+    width: 300px;
+    float: left;
+    text-align: left;
+    height: 300px;
+    @media (width: 600px) {
+      height: auto;
+    }
+  }
+  .col-md-2{
+    width: 80vh;
+    float: left;
+    text-align: left;
+    height: 350px;
+    @media (width: 600px) {
+      height: auto;
+    }
+  }
+  .aaa {
+    margin: 10px ;
+  }
+  .aaa:hover {
+    transform: scale(1.2);
+  }
+  ul.ul-edu li .institution {
+    font-size: 20px;
+    color: rgba(0,0,0,0.6);
+  }
+  ul.ul-edu li .description,.institution {
+    text-align: left;
+    margin-top: -10px;
+  }
+  .ul-interests {
+    text-align: left;
+    margin-top: -10px;
+  }
