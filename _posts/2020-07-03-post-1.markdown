@@ -34,13 +34,13 @@ As a consequence, to avoid preemption and speed problems, in our implementation 
 - 1 start and 1 stop bit.
 - No parity bit.
 - No flow control.
-- Implementation
 
+##Implementation
 The implementation of the driver will be separated in two halves :
        
 A bottom half that contains the protocol implementation and manages the low level GPIO interactions.
 A top half which implements the actual TTY driver and manages the interaction with the user space.
-## Bottom half
+### Bottom half
 For the is section, before creating the code that manages the low level interactions, we will start by implementing a circular buffer that will be used to stock the sending data. This buffer will be shared between the function that reads
 
 
