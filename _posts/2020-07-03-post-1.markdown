@@ -35,7 +35,7 @@ As a consequence, to avoid preemption and speed problems, in our implementation 
 - No parity bit.
 - No flow control.
 
-##Implementation
+## Implementation
 The implementation of the driver will be separated in two halves :
        
 A bottom half that contains the protocol implementation and manages the low level GPIO interactions.
