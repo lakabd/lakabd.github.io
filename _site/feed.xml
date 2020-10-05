@@ -4,10 +4,10 @@
     <title>Abderrahim LAKBIR&#39;s Blog</title>
     <description>Welcome to my blog.
 </description>
-    <link>https://lakabd.github.io//</link>
-    <atom:link href="https://lakabd.github.io//feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 04 Oct 2020 20:37:41 +0200</pubDate>
-    <lastBuildDate>Sun, 04 Oct 2020 20:37:41 +0200</lastBuildDate>
+    <link>https://lakabd.github.io/</link>
+    <atom:link href="https://lakabd.github.io/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Mon, 05 Oct 2020 17:31:24 +0200</pubDate>
+    <lastBuildDate>Mon, 05 Oct 2020 17:31:24 +0200</lastBuildDate>
     <generator>Jekyll v3.1.6</generator>
     
       <item>
@@ -28,8 +28,8 @@
 
 </description>
         <pubDate>Sat, 03 Oct 2020 17:44:54 +0200</pubDate>
-        <link>https://lakabd.github.io//jekyll/update/2020/10/03/welcome-to-jekyll.html</link>
-        <guid isPermaLink="true">https://lakabd.github.io//jekyll/update/2020/10/03/welcome-to-jekyll.html</guid>
+        <link>https://lakabd.github.io/jekyll/update/2020/10/03/welcome-to-jekyll-copy.html</link>
+        <guid isPermaLink="true">https://lakabd.github.io/jekyll/update/2020/10/03/welcome-to-jekyll-copy.html</guid>
         
         
         <category>jekyll</category>
@@ -39,58 +39,53 @@
       </item>
     
       <item>
-        <title>Welcome to Jekyll!</title>
-        <description>&lt;p&gt;You’ll find this post in your &lt;code class=&quot;highlighter-rouge&quot;&gt;_posts&lt;/code&gt; directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run &lt;code class=&quot;highlighter-rouge&quot;&gt;jekyll serve&lt;/code&gt;, which launches a web server and auto-regenerates your site when a file is updated.&lt;/p&gt;
+        <title>Linux kernel driver : Building a soft UART for Raspberry Pi boards</title>
+        <description>&lt;p&gt;The RPi is a well known platform intended for educational use. For its compact form and relatively low cost, this board has become very popular among enthusiasts and makers. The RPi is used in many projects from different fields, eg. robotics and IoT… where it’s linked with different types of sensors and detectors.&lt;/p&gt;
 
-&lt;p&gt;To add new posts, simply add a file in the &lt;code class=&quot;highlighter-rouge&quot;&gt;_posts&lt;/code&gt; directory that follows the convention &lt;code class=&quot;highlighter-rouge&quot;&gt;YYYY-MM-DD-name-of-post.ext&lt;/code&gt; and includes the necessary front matter. Take a look at the source for this post to get an idea about how it works.&lt;/p&gt;
+&lt;p&gt;In many cases, the sensors that are used, adopts a communication protocol such as SPI, UART, I2C for wired communication, or wireless using protocols such as Bluetooth and ZigBee. The most adopted, and easy to use of serial protocols is the Universal Asynchronous Receiver-Transmitter (UART for short).&lt;/p&gt;
 
-&lt;p&gt;Jekyll also offers powerful support for code snippets:&lt;/p&gt;
+&lt;p&gt;Unfortunately, all versions of the RPi until version 3, comes with only two UART ports : a full featured UART (PL011) enabled by default (GPIO’s 14 and 15), and a mini UART with a reduced feature set (used by the wireless LAN/Bluetooth controller, on models which contain this controller) that necessitate some tweaking to get it working at first (modification of the Device Tree Overlay basically). This hardware limitation of the RPi can be a complication for projects that needs more than the two UART ports especially for RPi models that doesn’t have much of peripherals (eg. RPi Zero).&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-  &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Hi, &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;Tom&#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;#=&amp;gt; prints &#39;Hi, Tom&#39; to STDOUT.&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+&lt;p&gt;The idea behind this project, comes to tackle this specific problem by creating a software UART compatible with all linux based boards including the RPi. Because it’s a software implementation, it has only the minimal features required to establish a reliable serial connection. As you will find throughout this write up, the software implementation obviously can’t compete with the real hardware port, nevertheless, it offers a decent alternative.&lt;/p&gt;
 
-&lt;p&gt;Check out the &lt;a href=&quot;http://jekyllrb.com/docs/home&quot;&gt;Jekyll docs&lt;/a&gt; for more info on how to get the most out of Jekyll. File all bugs/feature requests at &lt;a href=&quot;https://github.com/jekyll/jekyll&quot;&gt;Jekyll’s GitHub repo&lt;/a&gt;. If you have questions, you can ask them on &lt;a href=&quot;https://talk.jekyllrb.com/&quot;&gt;Jekyll Talk&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;You’ill find all the writen code in my Github.&lt;/p&gt;
 
+&lt;p&gt;Driver development
+Yes, I opted to implement this software UART port inside the Linux kernel as a Linux driver (a.k.a Linux module). If you are not familiar with Linux modules, they simply consist of a chunk of code that runs inside the kernel space, basically to add useful features to the OS or support to some device or user app, and it can be loaded/unloaded into the Linux kernel at runtime. The advantage of Linux modules over the applications that runs in the user space, is that they have higher execution privilege and generally run’s faster than the user space apps. As we are trying to emulate a hardware protocol by software, speed of execution is a real concerne for us, hence, the implementation as a Linux driver.&lt;/p&gt;
+
+&lt;p&gt;Before starting the implementation of our driver, we need first to take a look at the inner working of the UART protocol. 
+Bellow is a general summary of how the UART protocol works.
+UART serial port&lt;/p&gt;
+
+&lt;p&gt;The UART protocol is a two wire protocol : transmit (Tx) and receive (Rx), that lets two nodes exchange data asynchronously. To synchronize data sampling, the transmitter adds to each data word a start and a stop bit (the stop can be 1, 1.5 or 2 bits long), along with an optional parity bit that helps protecting the integrity of the data word.&lt;/p&gt;
+
+&lt;p&gt;Each packet contains a data word that can be 5 to 9 bits long. When the receiver detects the start bit in the Rx line, it starts sampling the data at the frequency specified by the baudrate (bits/sec). Additionally, advanced UART’s implements a hardware flow control (HFC) which is basically a strategy  for the communication between slow and fast devices without losing data.
+UART is a very simple protocol, however, its software emulation rises some exclamation marks about software preemption and the execution speed. As a matter of fact, like all other programs that runs on the processor, our Linux driver will obey to the scheduling policy of the Linux OS and depending on the baudrate used, the UART protocol can impose some very strict timing constraints : Each bit that is transmitted via the Tx line, takes 1/baudrate secondes to be sent. Therefore, if we consider that the receiver samples the data bits exactly at the middle, 1/(2*baudrate) will correspond to the maximum allowed difference between the sender’s and the receiver’s baudrates, eg. for a baudrate of  9600, the max allowed difference between the two baudrates is ~52 μs.&lt;/p&gt;
+
+&lt;p&gt;As a consequence, to avoid preemption and speed problems, in our implementation we will try to minimalize all the critical parts in the code and we will consider only the following minimale feature set of the protocol :&lt;/p&gt;
+
+&lt;p&gt;Data word size of 8bits.
+1 start and 1 stop bit.
+No parity bit.
+No flow control.
+Implementation
+The implementation of the driver will be separated in two halves :&lt;/p&gt;
+
+&lt;p&gt;A bottom half that contains the protocol implementation and manages the low level GPIO interactions.
+A top half which implements the actual TTY driver and manages the interaction with the user space.
+Bottom half
+For the is section, before creating the code that manages the low level interactions, we will start by implementing a circular buffer that will be used to stock the sending data. This buffer will be shared between the function that reads&lt;/p&gt;
+
+&lt;p&gt;to be continued…&lt;/p&gt;
+
+&lt;p&gt;A.L&lt;/p&gt;
 </description>
-        <pubDate>Sat, 03 Oct 2020 17:44:54 +0200</pubDate>
-        <link>https://lakabd.github.io//jekyll/update/2020/10/03/welcome-to-jekyll-copy.html</link>
-        <guid isPermaLink="true">https://lakabd.github.io//jekyll/update/2020/10/03/welcome-to-jekyll-copy.html</guid>
+        <pubDate>Fri, 03 Jul 2020 17:44:54 +0200</pubDate>
+        <link>https://lakabd.github.io/embedded/2020/07/03/post-1.html</link>
+        <guid isPermaLink="true">https://lakabd.github.io/embedded/2020/07/03/post-1.html</guid>
         
         
-        <category>jekyll</category>
-        
-        <category>update</category>
-        
-      </item>
-    
-      <item>
-        <title>Welcome to Jekyll!</title>
-        <description>&lt;p&gt;You’ll find this post in your &lt;code class=&quot;highlighter-rouge&quot;&gt;_posts&lt;/code&gt; directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run &lt;code class=&quot;highlighter-rouge&quot;&gt;jekyll serve&lt;/code&gt;, which launches a web server and auto-regenerates your site when a file is updated.&lt;/p&gt;
-
-&lt;p&gt;To add new posts, simply add a file in the &lt;code class=&quot;highlighter-rouge&quot;&gt;_posts&lt;/code&gt; directory that follows the convention &lt;code class=&quot;highlighter-rouge&quot;&gt;YYYY-MM-DD-name-of-post.ext&lt;/code&gt; and includes the necessary front matter. Take a look at the source for this post to get an idea about how it works.&lt;/p&gt;
-
-&lt;p&gt;Jekyll also offers powerful support for code snippets:&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-  &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Hi, &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;Tom&#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;#=&amp;gt; prints &#39;Hi, Tom&#39; to STDOUT.&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;Check out the &lt;a href=&quot;http://jekyllrb.com/docs/home&quot;&gt;Jekyll docs&lt;/a&gt; for more info on how to get the most out of Jekyll. File all bugs/feature requests at &lt;a href=&quot;https://github.com/jekyll/jekyll&quot;&gt;Jekyll’s GitHub repo&lt;/a&gt;. If you have questions, you can ask them on &lt;a href=&quot;https://talk.jekyllrb.com/&quot;&gt;Jekyll Talk&lt;/a&gt;.&lt;/p&gt;
-
-</description>
-        <pubDate>Sat, 03 Oct 2020 17:44:54 +0200</pubDate>
-        <link>https://lakabd.github.io//jekyll/update/2020/10/03/welcome-to-jekyll-copy-8.html</link>
-        <guid isPermaLink="true">https://lakabd.github.io//jekyll/update/2020/10/03/welcome-to-jekyll-copy-8.html</guid>
-        
-        
-        <category>jekyll</category>
-        
-        <category>update</category>
+        <category>Embedded</category>
         
       </item>
     
