@@ -302,6 +302,7 @@ pre {
       font-size: 36px; } }
 
 .post-content {
+  text-align: left;
   margin-bottom: 30px; }
   .post-content h2 {
     font-size: 32px; }
@@ -322,6 +323,7 @@ pre {
 /** my modifications
 */
 .home {
+  text-align: left;
   float: left;
   margin-left: 10px; }
   @media screen and (max-width: 600px) {
