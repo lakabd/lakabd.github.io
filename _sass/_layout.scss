@@ -220,6 +220,7 @@
 }
 
 .post-content {
+    text-align: left;
     margin-bottom: $spacing-unit;
 
     h2 {
@@ -252,6 +253,7 @@
 */
 
 .home{
+    text-align: left;
     float: left;
     margin-left: 10px;
     @include media-query($on-palm){

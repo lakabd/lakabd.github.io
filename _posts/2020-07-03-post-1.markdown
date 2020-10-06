@@ -15,7 +15,7 @@ The idea behind this project, comes to tackle this specific problem by creating 
 
 You'ill find all the writen code in my [Github](https://github.com/lakabd/Software-TTY-linux-driver).
 
-Driver development
+# Driver development
 Yes, I opted to implement this software UART port inside the Linux kernel as a Linux driver (a.k.a Linux module). If you are not familiar with Linux modules, they simply consist of a chunk of code that runs inside the kernel space, basically to add useful features to the OS or support to some device or user app, and it can be loaded/unloaded into the Linux kernel at runtime. The advantage of Linux modules over the applications that runs in the user space, is that they have higher execution privilege and generally run's faster than the user space apps. As we are trying to emulate a hardware protocol by software, speed of execution is a real concerne for us, hence, the implementation as a Linux driver.
 
 Before starting the implementation of our driver, we need first to take a look at the inner working of the UART protocol. 
@@ -30,16 +30,17 @@ UART is a very simple protocol, however, its software emulation rises some excla
 
 As a consequence, to avoid preemption and speed problems, in our implementation we will try to minimalize all the critical parts in the code and we will consider only the following minimale feature set of the protocol : 
 
-Data word size of 8bits.
-1 start and 1 stop bit.
-No parity bit.
-No flow control.
-Implementation
+- Data word size of 8bits.
+- 1 start and 1 stop bit.
+- No parity bit.
+- No flow control.
+
+## Implementation
 The implementation of the driver will be separated in two halves :
        
 A bottom half that contains the protocol implementation and manages the low level GPIO interactions.
 A top half which implements the actual TTY driver and manages the interaction with the user space.
-Bottom half
+### Bottom half
 For the is section, before creating the code that manages the low level interactions, we will start by implementing a circular buffer that will be used to stock the sending data. This buffer will be shared between the function that reads
 
 
