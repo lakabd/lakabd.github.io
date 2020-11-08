@@ -22,6 +22,10 @@ author: L.Abderrahim
 # Build settings
 markdown: kramdown
 
+# kramdown options
+kramdown:
+  syntax_highlighter: rouge
+
 # to activate/deactivate analytics.
 # comment this out when developping
 # production: yes

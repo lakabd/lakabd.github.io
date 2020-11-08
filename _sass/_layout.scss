@@ -220,7 +220,7 @@
 }
 
 .post-content {
-    text-align: left;
+
     margin-bottom: $spacing-unit;
 
     h2 {
@@ -263,6 +263,6 @@
 
 @include media-query($on-palm) {
     .wrapper {
-        text-align: center;
+        text-align: left;
     }
 }

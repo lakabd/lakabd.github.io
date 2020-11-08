@@ -1,3 +1,4 @@
+@import url(native.css);
 /**
  * Reset some basic elements
  */
@@ -95,7 +96,7 @@ code {
   font-size: 15px;
   border: 1px solid #e8e8e8;
   border-radius: 3px;
-  background-color: #eef; }
+  background-color: #f2f6fc; }
 
 code {
   padding: 1px 5px; }
@@ -302,7 +303,6 @@ pre {
       font-size: 36px; } }
 
 .post-content {
-  text-align: left;
   margin-bottom: 30px; }
   .post-content h2 {
     font-size: 32px; }
@@ -332,14 +332,14 @@ pre {
 
 @media screen and (max-width: 600px) {
   .wrapper {
-    text-align: center; } }
+    text-align: left; } }
 /**
  * Syntax highlighting styles
  */
 .highlight {
   background: #fff; }
   .highlighter-rouge .highlight {
-    background: #eef; }
+    background: #f2f6fc; }
   .highlight .c {
     color: #998;
     font-style: italic; }

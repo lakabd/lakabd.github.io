@@ -56,12 +56,12 @@
     }
   }
   .col-md-1{
-    width: 300px;
+    width: 300px; /*set the interests section width*/
     float: left;
     text-align: left;
   }
   .col-md-2{
-    width: 45%;
+    width: 45%; /*set the education section width*/
     float: left;
     text-align: left;
     height: auto;
@@ -84,3 +84,15 @@
     text-align: left;
     margin-top: -10px;
   }
+
+/* center images insid the post*/
+.post-content img{
+  display: block;
+  margin: 0 auto;
+}
+
+/*
+  to change the hightlight color of the post contents change the follwing values in :
+  - _sass/_syntax-highlighting.scss line 9
+  - _sass/_base.scss line 135
+*/
