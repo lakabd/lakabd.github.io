@@ -10,7 +10,7 @@
   <meta name="description" content="The RPi is a well-known platform intended for educational use. For its compact form and relatively low cost, this board has become very popular among enthusi...">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="https://lakabd.github.io/linux-driver/2020/07/03/post-1.html">
+  <link rel="canonical" href="https://lakabd.github.io/linux-driver/2020/07/03/post-1-copy.html">
   <link rel="alternate" type="application/rss+xml" title="Abderrahim LAKBIR's Blog" href="https://lakabd.github.io/feed.xml">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <link rel="stylesheet" href="/style.css">
@@ -62,13 +62,7 @@
 
   <header class="post-header">
     <h1 class="post-title" itemprop="name headline">Linux kernel module : Building a soft UART for the Raspberry Pi - part1</h1>
-    <p class="post-meta">
-      <time datetime="2020-07-03T17:44:54+02:00" itemprop="datePublished">
-        Jul 3, 2020
-      </time>
-      • <span >EN</span>
-      
-    </p>
+    <p class="post-meta"><time datetime="2020-07-03T17:44:54+02:00" itemprop="datePublished">Jul 3, 2020</time></p>
   </header>
 
   <div class="post-content" itemprop="articleBody">
@@ -81,7 +75,7 @@
 
 <p>The idea behind this project, comes to tackle this specific problem by creating a software <code class="highlighter-rouge">UART</code> compatible with all Linux based boards including the <code class="highlighter-rouge">RPi</code>. Because it’s a software implementation, it has only the minimal features required to establish a reliable serial connection. As you will find throughout this 2-parts write up, the software implementation obviously can’t compete with the real hardware port, nevertheless, it offers a decent alternative.</p>
 
-<p>You’ll find all the written code in my <strong><a href="https://www.blogger.com/blog/post/edit/1828726825959781021/5433115005355325235">Github</a></strong>.</p>
+<p>You’ll find all the written code in my <a href="https://www.blogger.com/blog/post/edit/1828726825959781021/5433115005355325235">Github</a>.</p>
 
 <h2 id="linux-driver">Linux driver</h2>
 
@@ -202,9 +196,9 @@
 
 <p>In a new file <code class="highlighter-rouge">Csoft_uart.c</code> we start the definition of our main functions:</p>
 
-<ul>
+<ol>
   <li><code class="highlighter-rouge">INIT_fct</code>:</li>
-</ul>
+</ol>
 
 <p>The first function is the <code class="highlighter-rouge">init</code> function, in which we start by initializing the Rx and Tx buffers, the <code class="highlighter-rouge">GPIO</code> pins (<em>note</em> : the idle state of the Tx pin is high), and we reserve the Rx line interrupt to be able to start receiving data (in the <code class="highlighter-rouge">ISR</code>) asap. We initialize also a reception <code class="highlighter-rouge">tasklet</code> that is used to pass Rx data over to the top layer (this will be discussed further below).</p>
 
@@ -243,9 +237,9 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<ul>
+<ol>
   <li><code class="highlighter-rouge">Tx_fct</code>:</li>
-</ul>
+</ol>
 
 <p>The transmit function is implemented as a simple while loop in which we retrieve data – word by word – from the Tx_buffer and send it bit per bit, along with a start bit at the beginning and a stop bit at the end of each data word.</p>
 
@@ -290,9 +284,9 @@
 
 <p>We’ve used the <code class="highlighter-rouge">ndelay()</code> function instead of <code class="highlighter-rouge">htimer</code> (which is a high resolution timer used in time precision based events) because the costs of frequently enabling and disabling <code class="highlighter-rouge">htimers</code>, in our use case, was experimentally judged of more harm than good (compared to using the <code class="highlighter-rouge">*delay()</code> function family) especially for high baudrate values.</p>
 
-<ul>
+<ol>
   <li><code class="highlighter-rouge">Rx_fct</code>:</li>
-</ul>
+</ol>
 
 <p>The implementation of the receive function is divided in two parts: the first part, which is the critical one, directly implemented in the <code class="highlighter-rouge">ISR</code> of the Rx line and handles the sampling of the received bits, and a second part, implemented in a <code class="highlighter-rouge">tasklet</code>, responsible of passing the received data over to the top layer.</p>
 
@@ -353,9 +347,9 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<ul>
+<ol>
   <li><code class="highlighter-rouge">Close_fct</code>:</li>
-</ul>
+</ol>
 
 <p>Lastly, we implement the close function to properly free the used resources:  free <code class="highlighter-rouge">IRQ</code> + free <code class="highlighter-rouge">GPIOs</code> + kill any scheduled <code class="highlighter-rouge">tasklet</code>.</p>
 <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="nf">uart_exit</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
@@ -371,11 +365,11 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>At the end of the implementation we can test our code by registering it directly as a simple module (not <code class="highlighter-rouge">tty</code>) and verify the correctness of the output using a logic analyzer or simply connecting the <code class="highlighter-rouge">GPIO</code> pins 17 &amp; 27 to the ports of a usb/serial adapter. Feel free to test this part yourself.</p>
+<p>At the end of the implementation we can test our code by registering it directly as a simple module (not <code class="highlighter-rouge">tty</code>) and verify the correctness of the output using a logic analyzer or simply connecting the <code class="highlighter-rouge">GPIO</code> pins <code class="highlighter-rouge">17 &amp; 27</code> to the ports of a usb/serial adapter. Feel free to test this part yourself.</p>
 
-<p>For me, I think we are done with this first part, long part, I will implement the top half of the driver in the part2 of this write-up. Also, for the testing part, we will see a real test of the driver in a Serial Line Internet Protocol (<code class="highlighter-rouge">SLIP</code>), all of that until the driver is complete.</p>
+<p>For me, I think we are done with this first part, long part, I will implement the top half of the driver in the part2 of this write-up. Also, for the testing part, we will see a real test of the driver in a Serial Line Internet Protocol (<code class="highlighter-rouge">SLIP</code>), all of that until the driver is complete. See you in the next part.</p>
 
-<p>See you in the next part.</p>
+<p>Thank you for reading.</p>
 
 <p>A.L</p>
 

@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Linux kernel module : Building a soft UART for the Raspberry Pi - part2</title>
+  <meta name="description" content="In the first part of this writeup we introduced our project of building a software UART Linux driver and we showed the implementation of the UART protocol, t...">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://lakabd.github.io/linux-driver/2020/07/09/post-2.html">
+  <link rel="alternate" type="application/rss+xml" title="Abderrahim LAKBIR's Blog" href="https://lakabd.github.io/feed.xml">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/style.css">
+
+  
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">Abderrahim LAKBIR's Blog</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Linux kernel module : Building a soft UART for the Raspberry Pi - part2</h1>
+    <p class="post-meta">
+      <time datetime="2020-07-09T18:24:03+02:00" itemprop="datePublished">
+        Jul 9, 2020
+      </time>
+      • <span >EN</span>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>In the first part of this writeup we introduced our project of building a software <code class="highlighter-rouge">UART</code> Linux driver and we showed the implementation of the <code class="highlighter-rouge">UART</code> protocol, the low-level part of the driver. In this part, we will continue on implementing the driver’s top layer, and after it’s complete, we will begin the testing part by using our <code class="highlighter-rouge">softUART</code> as a Serial Line Internet Protocol (<code class="highlighter-rouge">SLIP</code>) port.
+<!--end_excerpt--></p>
+
+<h4 id="top-half">Top Half</h4>
+
+<p>In this layer we will focus on implementing our serial driver. As mentioned in the previous part, we will build the driver upon the serial core interface.</p>
+
+<p><img src="/media/post2/clip_image002.png" alt="img" style="zoom: 80%;" /></p>
+
+<p>If you recall, from the diagram above, we have three main structures to define for the driver:</p>
+
+<ul>
+  <li>The structure representing the actual driver: <code class="highlighter-rouge">struct uart_driver</code>
+    <ul>
+      <li>Registered using the function <code class="highlighter-rouge">uart_register_driver(&amp;uart_driver)</code></li>
+    </ul>
+  </li>
+  <li>
+    <p>The structure representing the port included in the driver: <code class="highlighter-rouge">struct uart_port</code></p>
+
+    <ul>
+      <li>
+        <p>One instance for each port in the driver (at least one port must be defined. It’s possible to have many ports in a driver: <code class="highlighter-rouge">nr</code> ports exactly)</p>
+      </li>
+      <li>
+        <p>Each port needs to added to the driver using the function <code class="highlighter-rouge">uart_add_one_port(&amp;uart_driver, &amp;uart_port)</code></p>
+      </li>
+    </ul>
+  </li>
+  <li>The structure containing the pointers to the port operations: <code class="highlighter-rouge">struct uart_ops</code></li>
+</ul>
+
+<p><code class="highlighter-rouge">uart_state</code> and <code class="highlighter-rouge">tty_driver</code> structures are automatically initialized when the driver is registered in the kernel, and they must not be defined.</p>
+
+<hr />
+
+<p>In a new file <code class="highlighter-rouge">module.c</code> we start the definition of our driver:</p>
+
+<ol>
+  <li>
+    <p><code class="highlighter-rouge">uart_driver</code> structure:</p>
+
+    <p>We start by defining our <code class="highlighter-rouge">uart_driver</code> structure in which we give the driver a name, assign a major and a minor number to it, along with the number of ports the driver contains: only one 	port in our case.</p>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">static</span> <span class="k">struct</span> <span class="n">uart_driver</span> <span class="n">softUart_driver</span> <span class="o">=</span>
+  <span class="p">{</span>
+  <span class="p">.</span><span class="n">owner</span> <span class="o">=</span> <span class="n">THIS_MODULE</span><span class="p">,</span>
+  <span class="p">.</span><span class="n">driver_name</span> <span class="o">=</span> <span class="s">"ttySOFT"</span><span class="p">,</span>
+  <span class="p">.</span><span class="n">dev_name</span> <span class="o">=</span> <span class="s">"ttySOFT"</span><span class="p">,</span> <span class="cm">/*the name that will appear under /dev */</span>
+  <span class="p">.</span><span class="n">major</span> <span class="o">=</span> <span class="mi">240</span><span class="p">,</span>
+  <span class="p">.</span><span class="n">minor</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+  <span class="p">.</span><span class="n">nr</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="cm">/*number of ports in this driver*/</span>
+  <span class="p">};</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">uart_port</code> structure:</p>
+
+    <p>In this structure we initialize the <code class="highlighter-rouge">FIFO</code> memory size (set to 1024 bytes), we set the pointer to our <code class="highlighter-rouge">uart_ops</code> structure and we specify the driver type (serial driver):</p>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">struct</span> <span class="n">uart_port</span> <span class="n">softUart_port</span> <span class="o">=</span>
+ <span class="p">{</span>
+ <span class="p">.</span><span class="n">fifosize</span> <span class="o">=</span> <span class="n">FIFO_SIZE</span><span class="p">,</span> <span class="cm">/*tx &amp; rx buffer size*/</span>
+ <span class="p">.</span><span class="n">ops</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">softUart_ops</span><span class="p">,</span>
+ <span class="p">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">TTY_DRIVER_TYPE_SERIAL</span><span class="p">,</span> <span class="cm">/*driver of type serial*/</span>
+ <span class="p">};</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">uart_ops</code> structure:</p>
+
+    <p>This structure defines the operations of the port (start Tx, stop …). It includes the support for a set of functions that allows the control of the hardware serial port functionalities. In our case, as we are not interested in emulating all the hardware port characteristics, we only need to implement the minimal set of functions for a normal working of the port. Below is the set of functions defined in the <code class="highlighter-rouge">uart_ops</code> structure:</p>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">static</span> <span class="k">struct</span> <span class="n">uart_ops</span> <span class="n">softUart_ops</span> <span class="o">=</span>
+ <span class="p">{</span>
+ <span class="p">.</span><span class="n">tx_empty</span> <span class="o">=</span> <span class="n">softUart_tx_empty</span><span class="p">,</span> <span class="c1">//return TIOCSER_TEMT if tx_buffer is empty, otherwise return 0
+</span> <span class="p">.</span><span class="n">get_mctrl</span> <span class="o">=</span> <span class="n">softUart_get_mctrl</span><span class="p">,</span> <span class="c1">//get modem ctrl : return CAR|CTS|DSR
+</span> <span class="p">.</span><span class="n">start_tx</span> <span class="o">=</span> <span class="n">softUart_start_tx</span><span class="p">,</span> <span class="c1">//called by write() : start transmitting chars
+</span> <span class="p">.</span><span class="n">startup</span> <span class="o">=</span> <span class="n">softUart_startup</span><span class="p">,</span> <span class="c1">//called by open(): initialize any low level driver state
+</span> <span class="p">.</span><span class="n">shutdown</span> <span class="o">=</span> <span class="n">softUart_shutdown</span><span class="p">,</span> <span class="c1">//called by close() : Disable the port, and free any resources
+</span> <span class="p">.</span><span class="n">set_termios</span> <span class="o">=</span> <span class="n">softUart_set_termios</span><span class="p">,</span> <span class="c1">//change the port parameters : only the baudrate change is permitted in our implementation
+</span> <span class="p">.</span><span class="n">ioctl</span> <span class="o">=</span> <span class="n">softUart_ioctl</span><span class="p">,</span> <span class="c1">//Perform any port specific IOCTLs : We implement TCSETS command only.
+</span> <span class="p">};</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Define port operations:</p>
+
+    <p>After the definition of the three structures, lets now start the definition of the operations initialized in the <code class="highlighter-rouge">uart_ops</code> structure:</p>
+
+    <ul>
+      <li>The <code class="highlighter-rouge">softUart_tx_empty()</code> function verifies if the transmission buffer of the driver is empty. This function is called by the top layer (after each transmission) when it doesn’t receive a wakeup call from the low-level layer. If this function returns 0 (buffer not empty), a delay of 30 seconds is triggered automatically by the top layer. Therefore, to avoid this delay, we will block our function so it doesn’t return until the buffer is empty:</li>
+    </ul>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">static</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="nf">softUart_tx_empty</span><span class="p">(</span><span class="k">struct</span> <span class="n">uart_port</span> <span class="o">*</span><span class="n">port</span><span class="p">)</span>
+ <span class="p">{</span>
+ <span class="n">printk</span><span class="p">(</span><span class="s">"...........tx_empty ! </span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+ <span class="k">while</span><span class="p">(</span><span class="o">!</span><span class="n">isBufferEmpty</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tx_buffer</span><span class="p">));</span> <span class="c1">// wait until buffer is empty
+</span> <span class="k">return</span> <span class="n">TIOCSER_TEMT</span><span class="p">;</span>
+ <span class="p">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>The <code class="highlighter-rouge">softUart_get_mctrl()</code> function is called when the port is initialized. This function returns the state of the different physical signals of the serial port. In our case, we don’t implement any control signal, however, in this function, we need to return that these three signals are permanently enabled: the <code class="highlighter-rouge">CAR</code> signal (DCD: Carrier Detect), <code class="highlighter-rouge">CTS</code> (Clear To Send) and the <code class="highlighter-rouge">DSR</code> (Data Set Ready)</li>
+    </ul>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">static</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="nf">softUart_get_mctrl</span><span class="p">(</span><span class="k">struct</span> <span class="n">uart_port</span> <span class="o">*</span><span class="n">port</span><span class="p">)</span>
+ <span class="p">{</span>
+ <span class="n">printk</span><span class="p">(</span><span class="s">"...........get_mctrl ! </span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+ <span class="k">return</span> <span class="n">TIOCM_CAR</span> <span class="o">|</span> <span class="n">TIOCM_CTS</span> <span class="o">|</span> <span class="n">TIOCM_DSR</span><span class="p">;</span>
+ <span class="p">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>The <code class="highlighter-rouge">softUart_start_tx()</code> function is called when the <code class="highlighter-rouge">write()</code> operation is called on the port. As its name implies, its role is to begin data transmission. The data to-send is stored in a circular buffer called <code class="highlighter-rouge">xmit</code> and accessible via the <code class="highlighter-rouge">uart_port</code> pointer: <code class="highlighter-rouge">port-&gt;state-&gt;xmit</code></li>
+    </ul>
+
+    <p>In this function, we start firstly by copying the to-send data from the top layer circular buffer <code class="highlighter-rouge">xmit</code> to the <code class="highlighter-rouge">Tx_buffer</code> of our low-level driver (we used for that the <code class="highlighter-rouge">push_string()</code> function defined previously in <code class="highlighter-rouge">circular_buffer.h</code>).</p>
+
+    <p>After copying, we update the <code class="highlighter-rouge">xmit</code> buffer pointers: tail and head, and we call our low-level function <code class="highlighter-rouge">uart_handle_tx()</code> to send the data via the <code class="highlighter-rouge">GPIO</code> port:</p>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">static</span> <span class="kt">void</span> <span class="nf">softUart_start_tx</span><span class="p">(</span><span class="k">struct</span> <span class="n">uart_port</span> <span class="o">*</span><span class="n">port</span><span class="p">)</span>
+ <span class="p">{</span>
+ <span class="n">printk</span><span class="p">(</span><span class="s">"...........start_tx ! </span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+ <span class="cm">/*copy data from xmit to tx_buffer*/</span>
+ <span class="n">push_string</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tx_buffer</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="p">)(</span><span class="n">port</span><span class="o">-&gt;</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">xmit</span><span class="p">.</span><span class="n">buf</span> <span class="o">+</span> <span class="n">port</span><span class="o">-&gt;</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">xmit</span><span class="p">.</span><span class="n">tail</span><span class="p">),</span> <span class="n">uart_circ_chars_pending</span><span class="p">(</span><span class="o">&amp;</span><span class="n">port</span><span class="o">-&gt;</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">xmit</span><span class="p">));</span>
+ <span class="cm">/*update xmit tail*/</span>
+ <span class="n">port</span><span class="o">-&gt;</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">xmit</span><span class="p">.</span><span class="n">tail</span> <span class="o">=</span> <span class="n">port</span><span class="o">-&gt;</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">xmit</span><span class="p">.</span><span class="n">head</span><span class="p">;</span>
+ <span class="cm">/*start tx*/</span>
+ <span class="n">uart_handle_tx</span><span class="p">(</span><span class="n">port</span><span class="p">);</span>
+ <span class="p">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>The <code class="highlighter-rouge">softUart_startup()</code> function is called when the <code class="highlighter-rouge">open()</code> operation is called on the driver. Its role is to initialize the low-level hardware. In this function we simply call the <code class="highlighter-rouge">uart_init()</code> function:</li>
+    </ul>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">static</span> <span class="kt">int</span> <span class="nf">softUart_startup</span><span class="p">(</span><span class="k">struct</span> <span class="n">uart_port</span> <span class="o">*</span><span class="n">port</span><span class="p">)</span>
+ <span class="p">{</span>
+ <span class="n">printk</span><span class="p">(</span><span class="s">"...........startup! </span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+ <span class="n">uart_init</span><span class="p">(</span><span class="n">GPIO_TX</span><span class="p">,</span><span class="n">GPIO_RX</span><span class="p">,</span> <span class="n">port</span><span class="p">);</span>
+ <span class="p">}</span> 
+</code></pre></div>    </div>
+
+    <ul>
+      <li>The <code class="highlighter-rouge">softUart_shutdown()</code> function is called when the <code class="highlighter-rouge">close()</code> operation is called on the driver. Its role is to close the port and free all used resources:</li>
+    </ul>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">static</span> <span class="kt">void</span> <span class="nf">softUart_shutdown</span><span class="p">(</span><span class="k">struct</span> <span class="n">uart_port</span> <span class="o">*</span><span class="n">port</span><span class="p">)</span>
+ <span class="p">{</span>
+ <span class="n">printk</span><span class="p">(</span><span class="s">"...........shutdown! </span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+ <span class="n">uart_exit</span><span class="p">();</span>
+ <span class="p">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>The <code class="highlighter-rouge">softUart_set_termios()</code> function is used by the user to set/get the configuration of the serial port: parity, data word size… In our case, as it’s a limited implementation, we will only allow baudrate changes (also, as it will be discussed later, our implementation imposes a max and min for the baudrate). This function is called when the <code class="highlighter-rouge">set_termios()</code> function from the library <code class="highlighter-rouge">termios.h</code> is called:</li>
+    </ul>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">static</span> <span class="kt">void</span> <span class="nf">softUart_set_termios</span><span class="p">(</span><span class="k">struct</span> <span class="n">uart_port</span> <span class="o">*</span><span class="n">port</span><span class="p">,</span> <span class="k">struct</span> <span class="n">ktermios</span> <span class="o">*</span><span class="n">new</span><span class="p">,</span> <span class="k">struct</span> <span class="n">ktermios</span> <span class="o">*</span><span class="n">old</span><span class="p">)</span>
+ <span class="p">{</span>
+ <span class="n">printk</span><span class="p">(</span><span class="s">"...........set_termios ! </span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+ <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">baud</span><span class="p">;</span>
+ <span class="n">baud</span> <span class="o">=</span> <span class="n">tty_termios_baud_rate</span><span class="p">(</span><span class="n">new</span><span class="p">);</span><span class="cm">/*convert the desired baudrate from ktermios arg*/</span>
+ <span class="k">if</span> <span class="p">(</span><span class="n">baud</span> <span class="o">&gt;=</span> <span class="n">MIN_BAUDRATE</span> <span class="o">&amp;&amp;</span> <span class="n">baud</span> <span class="o">&lt;=</span> <span class="n">MAX_BAUDRATE</span><span class="p">)</span>
+     <span class="n">uart_set_baudrate</span><span class="p">(</span><span class="n">baud</span><span class="p">);</span>
+ <span class="k">else</span>
+     <span class="n">printk</span><span class="p">(</span><span class="n">KERN_WARNING</span> <span class="s">"default Baudrate of 9600 is used ! </span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+ <span class="k">if</span><span class="p">((</span><span class="n">new</span><span class="o">-&gt;</span><span class="n">c_cflag</span> <span class="o">&amp;</span> <span class="n">CS8</span><span class="p">)</span> <span class="o">!=</span> <span class="n">CS8</span><span class="p">)</span>
+     <span class="n">printk</span><span class="p">(</span><span class="n">KERN_WARNING</span> <span class="s">"Only 8bit data size is available ! </span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+ <span class="k">if</span><span class="p">((</span><span class="n">new</span><span class="o">-&gt;</span><span class="n">c_cflag</span> <span class="o">&amp;</span> <span class="n">PARENB</span><span class="p">)</span> <span class="o">||</span> <span class="p">(</span><span class="n">new</span><span class="o">-&gt;</span><span class="n">c_cflag</span> <span class="o">&amp;</span> <span class="n">PARODD</span><span class="p">))</span>
+     <span class="n">printk</span><span class="p">(</span><span class="n">KERN_WARNING</span> <span class="s">"No parity bit is available ! </span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+ <span class="p">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>The <code class="highlighter-rouge">softUart_ioctl()</code> function is pretty the same as the previous one, we define it only for compatibility reasons. This function is called when the <code class="highlighter-rouge">ioctl()</code> operation is called on the driver, and it’s used to set/get the configuration of the serial port. We will add the support for only one <code class="highlighter-rouge">ioctl</code> command, which is <code class="highlighter-rouge">TCSETS</code>, that is used to set the serial port settings. If this command is called, we change only the baudrate and leave everything as it is:</li>
+    </ul>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">static</span> <span class="kt">int</span> <span class="nf">softUart_ioctl</span><span class="p">(</span><span class="k">struct</span> <span class="n">uart_port</span> <span class="o">*</span><span class="n">port</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">cmd</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">arg</span><span class="p">)</span>
+ <span class="p">{</span>
+ <span class="n">printk</span><span class="p">(</span><span class="s">"...........ioctl cmd : %x ! </span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="n">cmd</span><span class="p">);</span>
+ <span class="k">if</span> <span class="p">(</span><span class="n">cmd</span> <span class="o">==</span> <span class="n">TCSETS</span><span class="p">)</span>
+     <span class="p">{</span>
+     <span class="k">struct</span> <span class="n">termios</span> <span class="o">*</span><span class="n">tty</span> <span class="o">=</span> <span class="p">(</span><span class="k">struct</span> <span class="n">termios</span> <span class="o">*</span><span class="p">)</span> <span class="n">arg</span><span class="p">;</span>
+     <span class="k">if</span><span class="p">((</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">c_cflag</span> <span class="o">&amp;</span> <span class="n">B19200</span><span class="p">)</span> <span class="o">==</span> <span class="n">B19200</span><span class="p">)</span>
+     <span class="n">uart_set_baudrate</span><span class="p">(</span><span class="mi">19200</span><span class="p">);</span>
+     <span class="k">else</span> <span class="k">if</span><span class="p">((</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">c_cflag</span> <span class="o">&amp;</span> <span class="n">B9600</span><span class="p">)</span> <span class="o">==</span> <span class="n">B9600</span><span class="p">)</span>
+     <span class="n">uart_set_baudrate</span><span class="p">(</span><span class="mi">9600</span><span class="p">);</span>
+     <span class="k">else</span> <span class="k">if</span><span class="p">((</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">c_cflag</span> <span class="o">&amp;</span> <span class="n">B4800</span><span class="p">)</span> <span class="o">==</span> <span class="n">B4800</span><span class="p">)</span>
+     <span class="n">uart_set_baudrate</span><span class="p">(</span><span class="mi">4800</span><span class="p">);</span>
+     <span class="k">else</span> <span class="k">if</span><span class="p">((</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">c_cflag</span> <span class="o">&amp;</span> <span class="n">B1200</span><span class="p">)</span> <span class="o">==</span> <span class="n">B1200</span><span class="p">)</span>
+     <span class="n">uart_set_baudrate</span><span class="p">(</span><span class="mi">1200</span><span class="p">);</span>
+     <span class="k">else</span>
+         <span class="p">{</span>
+         <span class="n">printk</span><span class="p">(</span><span class="s">"default Baudrate of 9600 is used ! </span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+         <span class="p">}</span>
+     <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+     <span class="p">}</span>
+ <span class="k">return</span> <span class="o">-</span><span class="n">ENOIOCTLCMD</span><span class="p">;</span> <span class="cm">/*mandatory return if cmd not supported*/</span>
+ <span class="p">}</span>
+</code></pre></div>    </div>
+
+    <blockquote>
+      <p><em>note:</em> To ease the driver debugging and to better understand when each operation is called, I added for each operation a <code class="highlighter-rouge">printk(“…….function name !”)</code>.</p>
+    </blockquote>
+  </li>
+  <li>
+    <p>Module <code class="highlighter-rouge">init</code> and module <code class="highlighter-rouge">exit</code>:</p>
+  </li>
+</ol>
+
+<p>After defining all the necessary operations, now we need to define the <code class="highlighter-rouge">module_init</code> and <code class="highlighter-rouge">module_exit</code> functions. These two functions are the homologue of the <code class="highlighter-rouge">main()</code> function in a regular program and they are as mandatory as the <code class="highlighter-rouge">main()</code> function is. The <code class="highlighter-rouge">init</code> function is the function that is called when the driver is loaded into the Linux kernel, and the <code class="highlighter-rouge">exit</code> one is called when the driver is unloaded</p>
+
+<ul>
+  <li>In <code class="highlighter-rouge">module_init</code> function we register our serial driver along with its port using <code class="highlighter-rouge">uart_register_driver()</code> and <code class="highlighter-rouge">uart_add_one_port()</code> functions:</li>
+</ul>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">static</span> <span class="kt">int</span> <span class="n">__init</span>    <span class="nf">mymodule_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> 
+<span class="p">{</span>
+ <span class="kt">int</span> <span class="n">ret</span><span class="p">;</span>
+ <span class="n">ret</span> <span class="o">=</span> <span class="n">uart_register_driver</span><span class="p">(</span><span class="o">&amp;</span><span class="n">softUart_driver</span><span class="p">);</span>
+ <span class="k">if</span> <span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="p">{</span>
+     <span class="n">printk</span><span class="p">(</span><span class="n">KERN_ERR</span> <span class="s">"softUart: could not register driver: %d</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">ret</span><span class="p">);</span>
+     <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
+     <span class="p">}</span>
+ <span class="n">ret</span> <span class="o">=</span> <span class="n">uart_add_one_port</span><span class="p">(</span><span class="o">&amp;</span><span class="n">softUart_driver</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">softUart_port</span><span class="p">);</span>
+ <span class="k">if</span> <span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="p">{</span>
+     <span class="n">printk</span><span class="p">(</span><span class="n">KERN_ERR</span> <span class="s">"softUart: could not add port: %d</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">ret</span><span class="p">);</span>
+     <span class="n">uart_unregister_driver</span><span class="p">(</span><span class="o">&amp;</span><span class="n">softUart_driver</span><span class="p">);</span>
+     <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
+     <span class="p">}</span>
+ <span class="n">printk</span><span class="p">(</span><span class="n">KERN_INFO</span> <span class="s">"Module initilized ! </span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+ <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+ <span class="p">}</span>
+</code></pre></div></div>
+
+<ul>
+  <li>In <code class="highlighter-rouge">module_exit</code> we unregister the driver and its port in the reverse order of registering: first unregistering the port and then the driver.</li>
+</ul>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">static</span> <span class="kt">void</span> <span class="n">__exit</span> <span class="nf">mymodule_exit</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> 
+<span class="p">{</span>
+ <span class="n">uart_remove_one_port</span><span class="p">(</span><span class="o">&amp;</span><span class="n">softUart_driver</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">softUart_port</span><span class="p">);</span>
+ <span class="n">uart_unregister_driver</span><span class="p">(</span><span class="o">&amp;</span><span class="n">softUart_driver</span><span class="p">);</span>
+ <span class="n">printk</span><span class="p">(</span><span class="n">KERN_INFO</span> <span class="s">"Bye. </span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+ <span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="compilation">Compilation</h3>
+
+<p>To compile our Linux module, we need to have on our system the Linux headers of the kernel on which the module will run. These headers provide the various function and structure definitions required when compiling code that interfaces with the kernel. If you are using a <code class="highlighter-rouge">RPi</code> executing the latest Raspbian image with internet access for development, the command below is sufficient to get the headers for your Linux kernel version:</p>
+
+<p><code class="highlighter-rouge">$ sudo apt-get install raspberrypi-kernel-headers</code></p>
+
+<p>In my case, as my <code class="highlighter-rouge">RPi</code> doesn’t execute the latest Raspbian image, the command above gave me a much recent kernel headers version which is not compatible with my kernel version, so i had to install it manually. (if you want to find out your image kernel version, execute the command: <code class="highlighter-rouge">$ uname -a</code>)</p>
+
+<p>The trick I used to get the proper Linux kernel headers version, is by searching in the Debian archive repository http://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/ for all the previous versions of the <code class="highlighter-rouge">raspberrypi-kernel-headers</code> package and download the one corresponding to my kernel version. Remembering the time I downloaded the Raspbian image, made it really easy to guess which package is the one, as each package has a publication date. Packages in the archive are disposed as <code class="highlighter-rouge">deb</code> files and can be installed using the command below:</p>
+
+<p><code class="highlighter-rouge">$ sudo dpkg -i raspberrypi-kernel-headers_&lt;pack-version&gt;_armhf.deb</code></p>
+
+<blockquote>
+  <p><em>Note</em> : if you can’t remember the date your image came out , you can install the packages one by one until you find the proper version. The package manager will automatically downgrade when you install older versions (the installed headers can be found under /usr/src/ folder).</p>
+</blockquote>
+
+<hr />
+
+<p>After we got the Linux headers, we can now compile our module using the <code class="highlighter-rouge">makefile</code> below:</p>
+
+<div class="language-makefile highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nv">obj-m</span> <span class="o">+=</span> Mymod.o
+ <span class="nv">Mymod-objs</span> <span class="o">:=</span> circular_buffer.o soft_uart.o module.o
+ <span class="nv">RELEASE</span> <span class="o">=</span> <span class="nf">$(</span><span class="nb">shell</span> uname <span class="nt">-r</span><span class="nv">)</span>
+ <span class="nv">LINUX_HEADERS</span> <span class="o">=</span> /usr/src/linux-headers-<span class="nv">$(RELEASE)</span>
+ <span class="nl">all</span><span class="o">:</span>
+ <span class="err">$(MAKE)</span> <span class="err">-C</span> <span class="err">$(LINUX_HEADERS)</span> <span class="nv">M</span><span class="o">=</span><span class="nv">$(PWD)</span> modules
+ <span class="nl">clean</span><span class="o">:</span>
+ <span class="err">$(MAKE)</span> <span class="err">-C</span> <span class="err">$(LINUX_HEADERS)</span> <span class="nv">M</span><span class="o">=</span><span class="nv">$(PWD)</span> clean
+</code></pre></div></div>
+
+<p>where the variable <code class="highlighter-rouge">LINUX_HEADERS</code> points to the path of the Linux headers.</p>
+
+<p>After successful compilation we obtain a file with the extension <code class="highlighter-rouge">.ko</code> (kernel object) which corresponds to our module object. To load the module into the kernel we use the command below:</p>
+
+<p><code class="highlighter-rouge">$ insmod Mymod.ko</code></p>
+
+<p>If we check now under the <code class="highlighter-rouge">/dev</code> path we can find that our serial port appears as a <code class="highlighter-rouge">TTY</code> device named <strong>ttySOFT0</strong> indicating a successful registration of our driver under the <code class="highlighter-rouge">TTY</code> subsystem of the kernel.</p>
+
+<p><img src="/media/post2/clip_image004.png" alt="img" /></p>
+
+<p><img src="/media/post2/clip_image006.png" alt="img" /></p>
+
+<p>The figure below shows the first test of our driver. I used a serial/usb adapter to connect to the Raspberry ports <code class="highlighter-rouge">17</code> and <code class="highlighter-rouge">27</code>, via the <code class="highlighter-rouge">minicom</code> console:</p>
+
+<p><img src="/media/post2/clip_image008.png" alt="img" /></p>
+
+<p>As we can see, our <code class="highlighter-rouge">SoftUART</code> driver is working properly in both Tx and Rx modes. As of the baudrate, the max allowed value for proper functioning of the driver was found to be 19200, beyond this baudrate, all exchanged data are corrupted.</p>
+
+<p>This limitation is well expected: a rise in the baudrate will tighten the timing constraints on our system and will end up by exceeding its capabilities as our implementation is prone to a lot of preemption. However, if we limit our baudrate below the max value, no difference can be noticed compared to a hardware peripheral.</p>
+
+<h3 id="serial-line-internet-protocol">Serial Line Internet Protocol</h3>
+
+<p>Coming soon…</p>
+
+<p>A.L</p>
+
+
+  </div>
+
+</article>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Abderrahim LAKBIR's Blog</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li>L.Abderrahim</li>
+          <li><a href="mailto:abderrahim.lakbir@etu.univ-lyon1.fr">abderrahim.lakbir@etu.univ-lyon1.fr</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2">
+        <ul class="social-media-list">
+          
+          <li>
+            <a href="https://github.com/lakabd" target="_blank"><span class="icon icon--github"><svg viewBox="0 0 16 16"><path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/></svg>
+</span><span class="username">lakabd</span></a>
+
+          </li>
+          
+
+          
+          <li>
+            <a href="https://www.linkedin.com/in/lakbir-abderrahim" target="_blank"><span class="icon icon--linkedin"><svg viewBox="0 0 16 16"><path fill="#828282" d="M13.632 13.635h-2.37V9.922c0-.886-.018-2.025-1.234-2.025-1.235 0-1.424.964-1.424 1.96v3.778h-2.37V6H8.51v1.04h.03c.318-.6 1.092-1.233 2.247-1.233 2.4 0 2.845 1.58 2.845 3.637v4.188zM3.558 4.955c-.762 0-1.376-.617-1.376-1.377 0-.758.614-1.375 1.376-1.375.76 0 1.376.617 1.376 1.375 0 .76-.617 1.377-1.376 1.377zm1.188 8.68H2.37V6h2.376v7.635zM14.816 0H1.18C.528 0 0 .516 0 1.153v13.694C0 15.484.528 16 1.18 16h13.635c.652 0 1.185-.516 1.185-1.153V1.153C16 .516 15.467 0 14.815 0z"/></svg>
+</span><span class="username">lakbir-abderrahim</span></a>
+
+          </li>
+          
+
+          
+
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-3">
+        <p style="font-family: 'Dishonorable Mention';">
+          Welcome to my blog.
+<br>
+          &copy; L.Abderrahim 2020 PowredBy <a href="https://jekyllrb.com/" target="_blank">Jekyll</a>.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

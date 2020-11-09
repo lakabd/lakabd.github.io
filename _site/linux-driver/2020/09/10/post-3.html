@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Projet YOCTO : Build d’une image Linux-RT pour Beaglebone Black</title>
+  <meta name="description" content="La carte Beaglbone black (BBB) est une plateforme embarquée open source utilisée dans plusieurs domaines éducationnels ainsi qu’industriels. Equipée d’un SOC...">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://lakabd.github.io/linux-driver/2020/09/10/post-3.html">
+  <link rel="alternate" type="application/rss+xml" title="Abderrahim LAKBIR's Blog" href="https://lakabd.github.io/feed.xml">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/style.css">
+
+  
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">Abderrahim LAKBIR's Blog</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Projet YOCTO : Build d’une image Linux-RT pour Beaglebone Black</h1>
+    <p class="post-meta">
+      <time datetime="2020-09-10T15:14:45+02:00" itemprop="datePublished">
+        Sep 10, 2020
+      </time>
+      • <span >FR</span>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>La carte Beaglbone black (<code class="highlighter-rouge">BBB</code>) est une plateforme embarquée open source utilisée dans plusieurs domaines éducationnels ainsi qu’industriels. Equipée d’un <code class="highlighter-rouge">SOC</code> am533x de Texas Instrument, cette plateforme est capable de tourner différents systèmes d’exploitation comme Linux, Android, WinCE… 
+<!--end_excerpt--></p>
+
+<p>Dans certaines applications, notamment dans le domaine industriel, il est parfois exigé d’avoir une performance temps réel du system, ce qui nécessite l’utilisation d’une solution temps réel soit software ou hardware. Dans ce manuscrit, nous allons s’intéresser à une solution software open source dédiée au system Linux connue sous le nom : le projet <code class="highlighter-rouge">PREEMPT_RT</code>.</p>
+
+<blockquote>
+  <p>“Controlling a laser with Linux is crazy, but everyone in this room is crazy in his own way. So, if you want to use Linux to control an industrial welding laser, I have no problem with your using PREEMPT_RT.” – Linus Torvalds</p>
+</blockquote>
+
+<p>Le projet <code class="highlighter-rouge">PREEMPT_RT</code> (fondé et maintenu par Thomas Gleixner, Ingo Molnar et de nombreux autres collaborateurs) offre une solution temps réel « souple » qui se présente sous forme d’un patch qu’on peut appliquer sur un noyau Linux standard pour améliorer ses performances pour le temps réel. L’application du patch <code class="highlighter-rouge">PREEMPT_RT</code> se fait sur le code source d’un noyau Linux avant sa compilation. Toutefois, comme le patch n’est disponible que pour des versions majeures et mineures bien précises du noyau Linux standard, l’application du patch peut s’avérer d’une grande complexité à cause des problèmes de compatibilité.</p>
+
+<p>L’objectif de cet article est d’investiguer une technique automatisée de construction d’image Linux embarqué avec le fameux projet Yocto, en construisant une image Linux patchée avec <code class="highlighter-rouge">PREEMPT_RT</code> pour la cible <code class="highlighter-rouge">BBB</code>. Dans La première partie, une introduction au système de construction du projet Yocto et de ses importants outils est présentée. Dans la deuxième partie, nous allons voir la configuration réalisée pour la construction d’une image Linux-RT basée sur un noyau fourni par Texas Instrument, puis, nous concluons par faire une comparaison de la performance offerte par cette solution temps réel, par rapport à une implémentation Linux normal.</p>
+
+<h2 id="projet-yocto">Projet Yocto</h2>
+
+<p>Le projet Yocto est un projet collaboratif, open source, créé par la fondation Linux en 2011 avec l’objectif de fournir et de créer des outils et processus interopérables pour la construction des images Linux personnalisées dédiées aux systèmes embarqués et IoT, peut-import leurs architectures hardware. Le projet Yocto offre un environnement de développement flexible, qui permet aux développeurs de systèmes embarqués de collaborer à travers une technologie partagée de piles logicielles, de configurations et des meilleures pratiques utilisées pour créer des images Linux personnalisées.</p>
+
+<p>Ce projet est basé sur une plateforme appelée <code class="highlighter-rouge">OpenEmbedded</code> créée en 2003, qui est une plateforme de compilation croisée automatisée, dédiée à la construction des images Linux embarquée. Le system de construction de cette plateforme utilise un outil qui s’appelle <code class="highlighter-rouge">Bitbake</code>, similaire à l’outil <code class="highlighter-rouge">GNU Make</code>, et qui permet de spécifier les scriptes de construction, appelée « recettes » dans le langage <code class="highlighter-rouge">Bitbake</code>, d’un package donné. Les recettes <code class="highlighter-rouge">Bitbake</code> (extension <code class="highlighter-rouge">.bb</code>) incluent la liste des dépendances de chaque package, la location du source code, et toutes autres informations nécessaires qui permettent aux outils <code class="highlighter-rouge">d’OpenEmbedded</code> de créer une image Linux bootable.</p>
+
+<p>Dans la repos officielle ( 🕊 j’ai l’habitude d’utiliser le mot “la repos” à la place de “ le dépôt” conformément au mot anglais dominant : Repository ) du projet Yocto : git.yoctoproject.org, nous trouvons une distribution de référence appelée <code class="highlighter-rouge">Poky</code>, qui contient le système de construction <code class="highlighter-rouge">OpenEmbedded</code> plus un ensemble de métadonnées permettant aux développeurs d’amorcer la construction de leurs distributions personnalisées. Cette référence est fournie comme une spécification de base et elle permet - out of the box - de construire une image bootable pour un système embarqué typique.</p>
+
+<p>La figure ci-dessous illustre la relation de <code class="highlighter-rouge">Poky</code> avec le reste du projet :</p>
+
+<p><img src="/media/post3/image-20201108170005870.png" alt="image-20201108170016427" /></p>
+
+<p>Pour en savoir plus sur <code class="highlighter-rouge">Poky</code>, voir le lien : <a href="https://www.yoctoproject.org/docs/2.5/overview-manual/overview-manual.html#reference-embedded-distribution">Reference Embedded Distribution (Poky)</a></p>
+
+<h3 id="modèle-en-couche">Modèle en couche</h3>
+
+<p>L’un des points forts du projet Yocto et que chaque aspect de construction est contrôlé via les métadonnées. En effet, Il est possible d’ajouter/modifier des couches de métadonnées permettant l’ajout de nouvelles piles logicielles, du support pour le nouveau hardware (Board Support Packages) ou même créer des nouveaux types d’images (image minimale, basique…).</p>
+
+<p>Le modèle en couche du projet Yocto sert à isoler les différentes personnalisations ajoutées, dans le but d’améliorer la flexibilité et la réutilisabilité de ses différents processus de construction : plus la structure est modulaire plus et facile de coopérer avec les changements futurs.</p>
+
+<p>Chaque couche Yocto respecte une hiérarchie bien précise, permettant de garder la compatibilité et la portabilité avec les autres couches du projet. Par commodité d’utilisation, le nom des couches Yocto commence toujours par le préfix <code class="highlighter-rouge">meta-</code> . Ci-dessous, la composition typique d’une couche Yocto :</p>
+
+<p><img src="/media/post3/image-20201108170028468.png" alt="image-20201108170028468" /></p>
+
+<p>Une couche Yocto est composée d’un dossier obligatoire conf qui contient :</p>
+
+<ul>
+  <li>
+    <p>Le fichier de configuration <code class="highlighter-rouge">layer.conf</code> indiquant les différentes recettes offertes par cette couche.</p>
+  </li>
+  <li>
+    <p>Le dossier machine qui contient le fichier de configuration <code class="highlighter-rouge">machine.conf</code> liée à la plateforme cible.</p>
+  </li>
+</ul>
+
+<p>Plus des dossiers de recettes qui ajoutent le support de nouvelles fonctionnalités, ou étendent (fichiers <code class="highlighter-rouge">.bbappend</code>) celles existantes déjà dans autres couches. Dans la couche de la figure ci-dessus, nous trouvons, en plus du conf, le dossier <code class="highlighter-rouge">recipes-kernel</code> qui contient une recette <code class="highlighter-rouge">Bitbake</code> (.bb) pour la construction d’un noyau Linux.</p>
+
+<h4 id="couche-bsp">Couche BSP</h4>
+
+<p>En effet, les couches Yocto qui ajoutent du support à des nouvelles machines sont appelées des couches <code class="highlighter-rouge">BSP</code> (Board Support Packages). Il s’agit d’une collection d’instructions et d’informations (des métadonnées) qui définit comment prendre en charge un système ou périphérique matériel. Elles incluent des informations sur les fonctionnalités matérielles présentes sur le périphérique, les informations de configuration du noyau ainsi que tout pilote matériel supplémentaire requis. Elles ajoutent également tous les composants logiciels supplémentaires en addition au stack Linux, pour les fonctionnalités du périphérique essentielles et facultatives.</p>
+
+<h3 id="bitbake">Bitbake</h3>
+
+<p><code class="highlighter-rouge">BitBake</code> se trouve au cœur du système de build <code class="highlighter-rouge">OpenEmbedded</code>. C’est un système générique d’exécution de tâches (écrit en <code class="highlighter-rouge">Python</code>), qui permet aux tâches <code class="highlighter-rouge">shell</code> et <code class="highlighter-rouge">Python</code> d’être exécutées efficacement et en parallèle tout en travaillant dans des contraintes de dépendance inter-tâches complexes.</p>
+
+<p>Conceptuellement, <code class="highlighter-rouge">BitBake</code> est similaire à <code class="highlighter-rouge">GNU Make</code> à certains égards :</p>
+
+<ul>
+  <li>
+    <p><code class="highlighter-rouge">BitBake</code> exécute les tâches en fonction des métadonnées fournies de chaque package. Les métadonnées sont stockées dans les fichiers recettes (<code class="highlighter-rouge">.bb</code>), fichiers de configuration (<code class="highlighter-rouge">.conf</code>) et de classe (<code class="highlighter-rouge">.bbclass</code>) qui fournissent à <code class="highlighter-rouge">BitBake</code> toutes les instructions sur les tâches à exécuter et leurs interdépendances.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">BitBake</code> inclut toute une bibliothèque dédier à la récupération du code source de divers endroits (systèmes de contrôle de source, serveurs Web,…) et qui supporte plusieurs protocoles : git, https, ftp, file, ssh…</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">Bitbake</code> utilise un model client/serveur, qui permet de l’utiliser à partir de la ligne de commande ou comme un service via XML-RPC.</p>
+  </li>
+</ul>
+
+<h4 id="les-recettes-bitbake-">Les recettes Bitbake :</h4>
+
+<p>Ce sont des fichiers désignés par l’extension <code class="highlighter-rouge">.bb</code>, et ils représentent les briques élémentaires des métadonnées. Chaque fichier recette, fournit toutes les informations nécessaires à la construction du package correspondant. Ces informations sont organisées dans des variables ou codées dans des fonctions prédéfinies par <code class="highlighter-rouge">Bitbake</code> :</p>
+
+<ul>
+  <li>
+    <p>Une description du package : Dans la variable <code class="highlighter-rouge">DESCRIPTION</code>.</p>
+  </li>
+  <li>
+    <p>La version de la recette : Dans la variable <code class="highlighter-rouge">PV</code>.</p>
+  </li>
+  <li>
+    <p>Les dépendances existantes : Dans la variable <code class="highlighter-rouge">DEPENDS</code>.</p>
+  </li>
+  <li>
+    <p>La location du source code du package : Dans la variable <code class="highlighter-rouge">SRC_URI</code>.</p>
+  </li>
+  <li>
+    <p>La location des différents patches à appliquer au code source, s’il y en existe : Dans la variable <code class="highlighter-rouge">SRC_URI</code>.</p>
+  </li>
+  <li>
+    <p>Comment configurer et compiler le code source : Dans les fonction <code class="highlighter-rouge">do_configure()</code> et <code class="highlighter-rouge">do_compile()</code></p>
+  </li>
+  <li>
+    <p>Où installer le package : Dans la fonction <code class="highlighter-rouge">do_install()</code></p>
+  </li>
+</ul>
+
+<p>En addition, les recettes <code class="highlighter-rouge">Bitbake</code> utilisent une convention de nommage standard qui inclut le nom du package plus sa version dans le nom de la recette. C’est une règle de nommage à respecter, comme ces valeurs sont automatiquement prises par <code class="highlighter-rouge">Bitbake</code> et lui permet de localiser toutes les recettes disponibles et leurs versions correspondantes. Le format attendu du nom d’une recette est le suivant : <code class="highlighter-rouge">packagename_version-r1.bb</code> avec <code class="highlighter-rouge">r1</code> le numéro du release (s’il n’est pas spécifié, sa valeur par défaut est <code class="highlighter-rouge">r0</code>). Par exemple, dans la couche Yocto de la figure précédente, nous avions une recette pour la construction d’un package <code class="highlighter-rouge">linux-yocto</code> de version <code class="highlighter-rouge">5.4</code>.</p>
+
+<blockquote>
+  <p>Note : Pour choisir cette recette dans le build d’une machine, au cas où il y’en a plusieurs pour différentes versions, il suffit de spécifier dans le fichier <code class="highlighter-rouge">machine.conf</code> la version préférée en utilisant la notation suivante :        <code class="highlighter-rouge">PREFERRED_VERSION_linux-yocto = "5.4"</code></p>
+</blockquote>
+
+<h2 id="construction-dune-image-temps-réel-pour-la-beaglebone-black">Construction d’une image temps réel pour la BeagleBone Black</h2>
+
+<h3 id="préparation-du-workspace">Préparation du Workspace</h3>
+
+<p>Pour utiliser le projet Yocto, il est nécessaire d’abord d’avoir une machine de développement avec un minimum de 50 Go d’espace disque libre et qui exécute une distribution Linux prise en charge (voir le <a href="http://www.yoctoproject.org/docs/2.4.2/ref-manual/ref-manual.html#detailed-supported-distros">lien</a>).</p>
+
+<ul>
+  <li>Installation des packages essentiels :</li>
+</ul>
+
+<p>Ce sont les principaux outils et packages nécessaires à la construction avec le projet Yocto. Ceux-ci incluent le compilateur <code class="highlighter-rouge">GNU GCC</code>, un système de contrôle de versions, plus d’autres packages selon ce qu’on veut faire (ajouter du support graphique, générer la doc … etc). Ci-dessous la commande pour obtenir l’essentiel sur Ubuntu :</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">sudo </span>apt-get install gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping libsdl1.2-dev xterm
+</code></pre></div></div>
+
+<ul>
+  <li>Récupération des couches de métadonnées nécessaires :</li>
+</ul>
+
+<p>Pour notre cible <code class="highlighter-rouge">BBB</code>, nous allons se baser sur la couche <code class="highlighter-rouge">Poky</code>, mais en plus, nous avons besoin de la couche <code class="highlighter-rouge">BSP</code> spécifique au hardware de la carte <code class="highlighter-rouge">BBB</code>. Pour cela nous allons utiliser la couche <code class="highlighter-rouge">meta-ti</code> de la part de Texas Instrument (qui est le vendeur du <code class="highlighter-rouge">SOC</code> amx335 de la carte <code class="highlighter-rouge">BBB</code>) fournie dans la repos officielle du projet Yocto. Dans cette couche, en plus des recettes <code class="highlighter-rouge">BSP</code> qui incluent les configurations hardwares, nous trouvons les recettes de construction des noyaux <code class="highlighter-rouge">Linux-rt</code> et <code class="highlighter-rouge">non-rt</code> fournies par TI ainsi que des recettes personnalisées avec des fonctionnalités supplémentaires compatibles avec la carte <code class="highlighter-rouge">BBB</code>.</p>
+
+<p>Nous avons besoin donc, de deux couches : <code class="highlighter-rouge">Poky</code>, plus <code class="highlighter-rouge">meta-ti</code>. Comme ces deux couches sont des repos Git contenant plusieurs branches, nous allons se baser sur les commits <code class="highlighter-rouge">sumo19.0.0</code> (de la branche sumo) pour <code class="highlighter-rouge">Poky</code> et <code class="highlighter-rouge">ti2018.02</code> pour <code class="highlighter-rouge">meta-ti</code> (ce choix est basé sur les travaux de <a href="https://bootlin.com/doc/training/yocto/yocto-labs.pdf">Bootlin</a>).</p>
+
+<p>Sous un nouveau dossier <code class="highlighter-rouge">yocto_workspace</code>, exécuter les commandes suivantes dans le terminal pour récupérer le code source des deux repos :</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>git clone https://git.yoctoproject.org/git/Poky
+<span class="nv">$ </span>git clone https://git.yoctoproject.org/git/meta-ti
+<span class="nv">$ </span><span class="nb">cd </span>Poky <span class="o">&amp;&amp;</span> git checkout <span class="nt">-b</span> BBB sumo-19.0.0
+<span class="nv">$ </span><span class="nb">cd </span>meta-ti <span class="o">&amp;&amp;</span> git checkout <span class="nt">-b</span> BBB ti2018.02
+</code></pre></div></div>
+
+<h3 id="configuration-des-couches-yocto">Configuration des couches Yocto</h3>
+
+<ol>
+  <li>
+    <p>Configuration de la couche Poky :</p>
+
+    <p>Nous commençons premièrement par “sourcer” le fichier <code class="highlighter-rouge">oe-init-build-env</code> qui permet de créer l’environnement de build :</p>
+
+    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">cd </span>Poky <span class="o">&amp;&amp;</span> <span class="nb">source </span>oe-init-build-env
+</code></pre></div>    </div>
+
+    <p>Apres exécution, nous nous trouvons avec un nouveau dossier <code class="highlighter-rouge">build</code> sous le répertoire <code class="highlighter-rouge">Poky</code>, contenant deux fichiers de configuration dans un sous-dossier <code class="highlighter-rouge">conf</code> : <code class="highlighter-rouge">bblayers.conf</code> et <code class="highlighter-rouge">local.conf</code>. Ces deux fichiers sont à la base de toute la configuration du système de construction.</p>
+
+    <p>Le premier fichier <code class="highlighter-rouge">bblayers.conf</code>, comme son nom l’indique, il sert à configurer les couches dans le système de construction. Ce fichier contient, parmi d’autres informations, le chemin vers toutes les couches qui seront utilisées dans la construction sous la variable <code class="highlighter-rouge">BBLAYERS</code>. Ci-dessous un aperçu sur le contenu par défaut de cette variable :</p>
+
+    <p><img src="/media/post3/image-20201108170051528.png" alt="image-20201108170051528" /></p>
+
+    <p>Notre intérêt est d’utiliser la couche <code class="highlighter-rouge">BSP</code> <code class="highlighter-rouge">meta-ti</code>, pour cela nous devons remplacer la dernière couche <code class="highlighter-rouge">meta-Poky-bsp</code> par le chemin vers la couche <code class="highlighter-rouge">meta-ti</code> que nous avons téléchargée. Les deux première couches <code class="highlighter-rouge">meta</code> et <code class="highlighter-rouge">meta-Poky</code> constituent l’ensemble des métadonnées de base du système de construction et nous devons les garder.</p>
+
+    <p>Pour le deuxième fichier <code class="highlighter-rouge">local.conf</code>, il sert à définir toutes les configurations <code class="highlighter-rouge">Poky</code> de l’utilisateur local. Dans ce fichier nous définissons des valeurs pour différentes variables de configuration. Toute variable définie dans ce fichier remplace toute autre définition de cette variable dans la repos <code class="highlighter-rouge">Poky</code> (sauf si celle-ci est codée en dur : en utilisant <code class="highlighter-rouge">=</code> à la place de <code class="highlighter-rouge">?=</code>). Ci-dessous, les modifications que nous devons apporter à ce fichier pour notre cible <code class="highlighter-rouge">BBB</code> :</p>
+
+    <ul>
+      <li>
+        <p>Configuration de la machine cible : <code class="highlighter-rouge">MACHINE = "beaglebone"</code>
+<em>Attention</em> : à ne pas confondre avec <code class="highlighter-rouge">beaglbone-yocto</code>, ce sont deux machines différentes. N’oubliez pas de commenter toute autre définition de cette variable.</p>
+      </li>
+      <li>
+        <p>Ajouter les packages essentiels de développement ( <code class="highlighter-rouge">gcc</code>, <code class="highlighter-rouge">make</code>, <code class="highlighter-rouge">pkgconfig</code> …) plus les outils de profilage (module <code class="highlighter-rouge">lttng</code>, <code class="highlighter-rouge">valgrind</code>, …) à l’image générée : 
+<code class="highlighter-rouge">EXTRA_IMAGE_FEATURES ?= "debug-tweaks tools-sdk tools-profile"</code></p>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p>Configuration de la couche <code class="highlighter-rouge">meta-ti</code> :</p>
+
+    <p>Ce dossier représente notre couche <code class="highlighter-rouge">BSP</code>. Il contient des fichiers de configuration pour plusieurs machines sous le répertoire <code class="highlighter-rouge">conf/machine</code>. Parmi ces fichiers, on trouve <code class="highlighter-rouge">beaglbone.conf</code> qui correspond au fichier de configuration pour notre carte <code class="highlighter-rouge">BBB</code> (c’est le nom de ce fichier que nous avons donné à la variable <code class="highlighter-rouge">MACHINE</code> dans le fichier <code class="highlighter-rouge">local.conf</code> de la couche <code class="highlighter-rouge">Poky</code>). En plus du dossier <code class="highlighter-rouge">conf</code>, nous trouvons des dossiers de recettes pour différents packages : <code class="highlighter-rouge">kernel</code>, <code class="highlighter-rouge">connectivity</code>, <code class="highlighter-rouge">graphics</code>, <code class="highlighter-rouge">multimedia</code>…</p>
+
+    <p>Sous le dossier <code class="highlighter-rouge">recipes-kernel/linux</code> nous trouvons la recette du <code class="highlighter-rouge">noyau-rt</code> <code class="highlighter-rouge">linux-ti-staging-rt_4.14.bb</code> que nous allons utiliser pour construire notre image temps réel.</p>
+
+    <p>L’unique modification de cette couche, concerne le fichier de configuration <code class="highlighter-rouge">conf/machine/beaglbone.conf</code>. Dans ce fichier nous devons indiquer au système de construction que nous voudrons utiliser le <code class="highlighter-rouge">noyau-rt</code> dans le <code class="highlighter-rouge">build</code> de l’image pour cette machine, et ce, en se basant sur la recette <code class="highlighter-rouge">linux-ti-staging-rt_4.14.bb</code>. Cette modification consiste d’ajouter les deux lignes suivantes dans le fichier de configuration :</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PREFERRED_PROVIDER_virtual/kernel = "linux-ti-staging-rt"
+COMPATIBLE_MACHINE_beaglebone = "beaglebone"
+</code></pre></div>    </div>
+
+    <p>Il est nécessaire aussi d’intégrer les modules noyau dans l’image finale en ajoutant la ligne ci-dessous :</p>
+
+    <p><code class="highlighter-rouge">MACHINE_EXTRA_RRECOMMENDS += "kernel-modules"</code></p>
+  </li>
+</ol>
+
+<h3 id="création-dune-image-rt">Création d’une image RT</h3>
+
+<p>Après configuration des deux couches, notre système de build est prêt pour générer une image Linux. Par défaut, la couche <code class="highlighter-rouge">Poky</code> fournit un ensemble de type d’image prête à être construite avec <code class="highlighter-rouge">Bitbake</code> : <code class="highlighter-rouge">core-image-minimal</code>, <code class="highlighter-rouge">core-image-sato</code>, <code class="highlighter-rouge">core-image-base</code>…</p>
+
+<p>Pour construire une image minimale, il suffit d’exécuter la commande :</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nv">$ </span>Bitbake core-image-minimal 
+</code></pre></div></div>
+
+<p>A la fin d’exécution de <code class="highlighter-rouge">Bitbake</code>, les artéfacts de construction sont générés dans le dossier <code class="highlighter-rouge">build/tmp/deploy/image/beaglbone/</code> :</p>
+
+<ul>
+  <li>
+    <p><code class="highlighter-rouge">am335x-boneblack.dtb</code> : ce fichier correspond au Device Tree Blob, qui décrit les périphériques de la carte <code class="highlighter-rouge">BBB</code> au noyau Linux.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">MLO</code> : Memory Loader, qui sert à initialiser le système et charger <code class="highlighter-rouge">u-boot</code>.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">u-boot.img</code> : l’image du bootloader <code class="highlighter-rouge">u-boot</code>. Le rôle final de u-boot est de charger le noyau Linux dans la DDR et de lui passer le contrôle.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">zImage</code> : c’est l’image binaire du noyau Linux !</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">core-image-minimal.rootfs.tar.xz</code> : fichier compressé du système de fichier Linux. 
+<em>Note</em> : Le dossier <code class="highlighter-rouge">boot</code> du rootfs contient par défaut la <code class="highlighter-rouge">zImage</code> et le fichier <code class="highlighter-rouge">dtb</code>.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">modules-4.14.93-r0.tgz</code> : compressé des modules que nous avons construits.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">core-image-minimal.rootfs.wic.xz</code> : ce fichier compressé contient tous les éléments précédents dans une seule image de type <code class="highlighter-rouge">.wic</code>. Cette image inclut des commandes de partitionnement permettant d’automatiser le portage de tous les éléments de l’image dans le support de la plateforme cible (ex : carte microSD).
+<em>Note</em> : le nom <code class="highlighter-rouge">WIC</code> est dérivé de <code class="highlighter-rouge">OpenEmbedded</code> Image Creator : <code class="highlighter-rouge">OEIC-&gt;WIC</code></p>
+  </li>
+</ul>
+
+<p>Tous les artéfacts générés sont spécifiés par les recettes <code class="highlighter-rouge">Bitbake</code> liées à l’image construite : <code class="highlighter-rouge">image-core-minimal.bb</code>, et à la machine <code class="highlighter-rouge">beaglbone.conf</code>.</p>
+
+<p>Pour le temps de construction écoulé de cette image minimale, il dépend essentiellement de deux paramètres : le débit internet et la puissance de calcul de la machine hôte. Sur ma machine locale (4 coeurs et un débit moyen de 200Ko/s), le build de l’image minimal a pris environ 6 heures. Après le premier build, Le projet Yocto garde le code source de tous les packages qui a construit sous le dossier <code class="highlighter-rouge">build/downloads</code> pour ne pas les retélécharger dans les prochains build.</p>
+
+<p>Comme cette image n’est qu’une image minimale, elle ne contient que le nécessaire des outils et librairie pour faire marcher une version Linux minimaliste. Donc, on y trouve ni outil de communication : <code class="highlighter-rouge">telnet</code>, <code class="highlighter-rouge">ssh</code>.., ni package manager et surtout aucun outil de tests temps réel comme le package <code class="highlighter-rouge">rt-tests</code> ou <code class="highlighter-rouge">hwlatdetect</code>.</p>
+
+<p>Pour résoudre cela, l’une des solutions est d’essayer d’installer tous les packages manquants de façon manuelle. Or, à cause des différentes dépendances entre les packages et les librairies… cette solution risque d’être très fastidieuse. La deuxième solution, qui est plutôt à portée de main, est de demander à <code class="highlighter-rouge">Bitbake</code> de les installer pour nous, comme les recettes de tous les packages dont nous avons besoin existent déjà dans la couche <code class="highlighter-rouge">Poky</code>.</p>
+
+<p>Nous avons décidé donc, de créer une nouvelle image (recette) appelée <code class="highlighter-rouge">beaglbone-ti-image-rt.bb</code>, dans laquelle nous spécifions toutes les caractéristiques et packages supplémentaires dont nous avons besoin. Pour ne pas recréer toute la base de l’image Linux, cette nouvelle image sera basée sur l’image existante <code class="highlighter-rouge">core-image-base.bb</code> qui inclut le support complet de la cible.</p>
+
+<p>Le contenu de cette nouvelle image est présenté dans la figure ci-dessous :</p>
+
+<p><img src="/media/post3/image-20201108170118287.png" alt="image-20201108170118287" /></p>
+
+<p>Premièrement, nous avons commencé par importer l’image <code class="highlighter-rouge">core-image-base.bb</code>. Puis, nous avons créé un script python (optionnel), pour stopper <code class="highlighter-rouge">Bitbake</code> si l’utilisateur n’a pas spécifié son noyau préféré au <code class="highlighter-rouge">noyau-rt</code> de TI : <code class="highlighter-rouge">linux-ti-staging-rt</code>. En addition, nous ajoutons les packages et fonctionnalités supplémentaires ci-dessous à l’image finale via les variables <code class="highlighter-rouge">IMAGE_INSTALL</code> et <code class="highlighter-rouge">IMAGE_FEATURES</code> :</p>
+
+<ul>
+  <li>
+    <p><code class="highlighter-rouge">rt-tests</code> et <code class="highlighter-rouge">hwlatdetect</code> : ces deux packages contiennent les outils de test temps réel, comme <code class="highlighter-rouge">cyclictest</code>, <code class="highlighter-rouge">hackbench</code> …</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">dropbear</code> : ce package contient le client <code class="highlighter-rouge">ssh</code> <code class="highlighter-rouge">dropbear</code>.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">package-managment</code> : ce package permet d’installer les outils de gestion des packages apt.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">ssh-server-dropbear</code> : Installer le serveur <code class="highlighter-rouge">ssh</code> minimal <code class="highlighter-rouge">dropbear</code>.</p>
+  </li>
+</ul>
+
+<p>IMPORTANT : Pour respecter la structure des couches Yocto, cette nouvelle recette est placée sous un nouveau dossier images/ dans le dossier <code class="highlighter-rouge">recipes-core/</code> de la couche <code class="highlighter-rouge">meta-ti</code>.</p>
+
+<p>Comme précédemment, nous générons cette nouvelle image en lançant la commande :</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>Bitbake beaglbone-ti-image-rt
+</code></pre></div></div>
+
+<p>A la fin de l’exécution, qui prend bien beaucoup plus de temps que l’image minimale, nous obtenons la sortie suivante :</p>
+
+<p><img src="/media/post3/image-20201109003537657.png" style="zoom: 90%;" /></p>
+
+<p>Dans le dossier <code class="highlighter-rouge">build/tmp/deploy/image/beaglbone/</code>, nous trouvons les artéfacts cités précédemment.</p>
+
+<h4 id="portage-de-limage">Portage de l’image</h4>
+
+<p>Le fichier qui nous intéresse pour le portage de l’image sur une carte microSD correspond au fichier <code class="highlighter-rouge">WIC</code>. Ce fichier contient toutes les commandes nécessaires pour partitionner automatiquement la carte microSD et copier dans chaque partition les fichiers correspondants. (Il est possible aussi de porter manuellement tous les éléments de build sur la carte SD, à la place d’utiliser le fichier <code class="highlighter-rouge">WIC</code>)</p>
+
+<p>Premièrement, nous commençons par décompresser le fichier <code class="highlighter-rouge">beaglebone-ti-image-rt.rootfs.wic.xz</code> avec la commande unxz. Pour voir le contenu du fichier <code class="highlighter-rouge">.wic</code>, il existe l’outil <code class="highlighter-rouge">wic</code> fourni avec <code class="highlighter-rouge">OpenEmbedded</code>. Il suffit de sourcer le script <code class="highlighter-rouge">oe-init-build-env</code> pour l’utiliser :</p>
+
+<p><img src="/media/post3/image-20201108170811599.png" alt="image-20201108170811599" /></p>
+
+<p>La commande <code class="highlighter-rouge">$ wic ls file.wic</code> permet d’afficher les deux partitions contenues dans le fichier. Pour afficher le contenu de chaque partition, nous ajoutons le numéro de la partition devant le nom du fichier <code class="highlighter-rouge">$ wic ls file.wic:2</code>. D’après la figure, nous remarquons que notre fichier <code class="highlighter-rouge">wic</code> contient deux partitions : une de type <code class="highlighter-rouge">Fat16</code> qui contient les fichiers du bootloader, et l’autre de type <code class="highlighter-rouge">ext4</code> qui contient le system de fichier root.</p>
+
+<p>Avant de commencer le portage, nous insérons la carte microSD dans la machine hôte et nous exécutons la commande <code class="highlighter-rouge">lsblk</code> pour savoir le nom du volume donné à la carte microSD :</p>
+
+<p><img src="/media/post3/image-20201108170859776.png" alt="image-20201108170859776" /></p>
+
+<p>Dans ce cas il s’agit du périphérique <code class="highlighter-rouge">sdc</code>, avec une partition montée <code class="highlighter-rouge">sdc1</code>. Nous démontons, premièrement, cette partition pour la détachée du système de fichiers avec la commande :</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">sudo </span>umount /dev/sdc?
+</code></pre></div></div>
+
+<p>Une fois la partition démontée, nous écrivons le fichier d’extension .wic directement sur l’ensemble du périphérique représentant la carte microSD :</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">sudo </span>cp beaglbone-ti-image-rt.wic /dev/sdc
+</code></pre></div></div>
+
+<p>A la fin de cette opération, la carte microSD est prête et nous pouvons l’éjecter de la machine hôte et l’insérer dans la <code class="highlighter-rouge">BBB</code>. Avant de démarrer la carte, il faut bien savoir les configurations de démarrage – l’ordre de boot - par défaut. Pour la <code class="highlighter-rouge">BBB</code> il y en existe deux :</p>
+
+<ul>
+  <li>Bouton S2 non appuyé lors de la mise sous tension de la carte :
+    <ol>
+      <li>MMC1 (eMMC)</li>
+      <li>MMC0 (SD card)</li>
+      <li>UART0</li>
+      <li>USB0</li>
+    </ol>
+  </li>
+  <li>Bouton S2 appuyé lors de la mise sous tension de la carte :
+    <ol>
+      <li>SPI0</li>
+      <li>MMC0 (SD card)</li>
+      <li>USB0</li>
+      <li>UART0</li>
+    </ol>
+  </li>
+</ul>
+
+<p>Donc pour empêcher la carte de démarrer à partir de l’<code class="highlighter-rouge">eMMC</code> en premier, il faut rester appuyer sur le bouton <code class="highlighter-rouge">S2</code> de la carte avant alimentation.</p>
+
+<p><img src="/media/post3/image-20201108170916357.png" alt="image-20201108170916357" /></p>
+
+<p>En branchant un adaptateur usb/FTDI au port <code class="highlighter-rouge">UART</code> de la <code class="highlighter-rouge">BBB</code>, et à travers <code class="highlighter-rouge">minicom</code>, nous obtenons la sortie suivante :</p>
+
+<p><img src="/media/post3/image-20201108170927324.png" alt="image-20201108170927324" /></p>
+
+<p>Donc, nous remarquons bien le bon démarrage du noyau Linux à partir de la carte microSD.</p>
+
+<p>Pour savoir s’il s’agit d’une image temps réel (patchée avec <code class="highlighter-rouge">PREEMPT_RT</code>), il suffit de voir la sortie de la commande <code class="highlighter-rouge">$ uname -a</code> si elle affiche le string <code class="highlighter-rouge">PREEMPT RT</code>, ou, de voir dans le fichier de configuration du noyau, si l’option <code class="highlighter-rouge">CONFIG_PREEMPT_RT_FULL</code> existe et activée. La figure ci-dessous montre que notre image est bel et bien patchée avec <code class="highlighter-rouge">PREEMPT_RT</code> :</p>
+
+<p><img src="/media/post3/image-20201108170935854.png" alt="image-20201108170935854" /></p>
+
+<p>A noter aussi, que cette image contient tous les outils que nous avons installés : <code class="highlighter-rouge">ssh</code>, <code class="highlighter-rouge">apt</code>, <code class="highlighter-rouge">cyclictest</code>…</p>
+
+<p><strong>Comparaison de performance</strong></p>
+
+<p>Pour réaliser le test de performance, nous avons construit une deuxième image pour la BBB , mais cette fois-ci l’image n’est pas RT c.à.d elle n’est pas patchée par <code class="highlighter-rouge">PREEMPT_RT</code>. Pour cela deux modifications ont été apportées à la configuration précédente :</p>
+
+<ul>
+  <li>
+    <p>Remplacer le contenu de la variable <code class="highlighter-rouge">PREFERRED_PROVIDER_virtual/kernel</code> par <code class="highlighter-rouge">linux-ti-staging</code> dans le fichier <code class="highlighter-rouge">beaglebone.conf</code> de la couche <code class="highlighter-rouge">meta-ti</code>.</p>
+  </li>
+  <li>
+    <p>Dans la recette de l’image créée <code class="highlighter-rouge">beaglbone-ti-image-rt.bb</code>, enlever le script python et renommer cette image à <code class="highlighter-rouge">beaglebone-ti-image.bb</code>. Il suffira après d’appeler cette image dans <code class="highlighter-rouge">Bitbake</code>.</p>
+  </li>
+</ul>
+
+<p>Maintenant que nous avons les deux images : <code class="highlighter-rouge">RT</code> et <code class="highlighter-rouge">non-RT</code> avec les packages de test temps réel installés, nous pouvons comparer les deux systèmes. Nous allons baser notre test sur deux outils de benchmarking qui sont souvent utilisés dans ce contexte :</p>
+
+<ul>
+  <li><code class="highlighter-rouge">Cyclictest</code> : Ce programme permet de qualifier la latence du système en mesurant le temps écoulé entre l’expiration d’un timer et le moment de l’exécution de la tâche qui l’a activé :</li>
+</ul>
+
+<p><img src="/media/post3/image-20201108170943874.png" alt="image-20201108170943874" /></p>
+
+<ul>
+  <li><code class="highlighter-rouge">Hackbench</code> : Ce programme effectue des mesures de commutation entre threads et processus qui communiquent par des pipes ou des sockets. Ce programme étant très intensif, nous allons l’utiliser comme élément perturbateur pour les mesures effectuées avec <code class="highlighter-rouge">cyclictest</code>.</li>
+</ul>
+
+<p>Les paramètres utilisés pour chaque outil sont décrits ci-dessous :</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>cyclictest <span class="nt">-a</span> 0 <span class="nt">-p</span> 99 <span class="nt">-m</span> <span class="nt">-n</span> <span class="nt">-D</span> 5m <span class="nt">-q</span> 
+    <span class="nt">-a</span> 0 : exécuter une seule tache sur le CPU0
+    <span class="nt">-p</span> 99 : utiliser la priorité temps réel FIFO 99
+    <span class="nt">-m</span> : Invoquer mlockall<span class="o">()</span> pour verrouiller la mémoire virtuelle du processus en mémoire physique <span class="o">(</span>pour éviter les problèmes de page fault<span class="o">)</span><span class="nb">.</span>
+    <span class="nt">-n</span> : utiliser la fonction clock_nanosleep<span class="o">()</span> à la place de nanosleep<span class="o">()</span><span class="nb">.</span>
+    <span class="nt">-D</span> 5m : exécuter le <span class="nb">test </span>pendant 5 minutes. Ce qui correspond à 300000 déclenchement pour la valeur de sleep<span class="o">()</span> par défaut qui est de 1 ms.
+    <span class="nt">-q</span> : <span class="nt">--quiet</span> : afficher le résultat jusqu’à la fin de test.
+</code></pre></div></div>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>hackbench <span class="nt">-s</span> 1024 <span class="nt">-l</span> 100 <span class="nt">--threads</span> <span class="nt">-f</span> 40 <span class="nt">-g</span> 10
+    <span class="nt">-s</span> 1024 : configurer la taille des messages échangés à 1024 octet.
+    <span class="nt">-l</span> 100 : configurer le nombre de messages échangé à 100.
+    <span class="nt">--threads</span> : utiliser des threads à la place des process.
+    <span class="nt">-f</span> 40 : chaque émetteur/récepteur peut ouvrir 40 ‘file descriptor’.
+    <span class="nt">-g</span> 10 : démarrer 10 groupes d’émetteur/récepteur.
+</code></pre></div></div>
+
+<p>Les tests sont effectués sur les deux images <code class="highlighter-rouge">Linux-RT</code> et <code class="highlighter-rouge">non-RT</code>. Nous allons réaliser deux scénarios de tests différents pour chaque image :</p>
+
+<ol>
+  <li>
+    <p>Un premier test sans charge : nous lançons l’outil <code class="highlighter-rouge">cyclictest</code> tout seul.</p>
+  </li>
+  <li>
+    <p>Un deuxième test avec charge intensive : nous lançons <code class="highlighter-rouge">cyclictest</code> dans un terminal, et en même temps, nous lançons <code class="highlighter-rouge">hackbench</code>.</p>
+  </li>
+</ol>
+
+<p>Comme nous exécutons l’outil <code class="highlighter-rouge">cyclictest</code> pour une durée de 5 minutes, lors des tests avec charge il faut empêcher <code class="highlighter-rouge">hackbench</code> de terminer avant cette durer. Pour cela, nous avons intégré la commande <code class="highlighter-rouge">hackbench</code> dans une boucle <code class="highlighter-rouge">while</code> à l’aide du script <code class="highlighter-rouge">Bash</code> ci-dessous :</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
+<span class="k">while</span> :
+<span class="k">do
+     </span>hackbench <span class="nt">-s</span> 1024 <span class="nt">-l</span> 100 <span class="nt">--threads</span> <span class="nt">-f</span> 40 <span class="nt">-g</span> 10
+<span class="k">done</span>
+</code></pre></div></div>
+
+<p>Après connexion à la carte, nécessairement en <code class="highlighter-rouge">ssh</code> pour être capable d’ouvrir deux terminaux, nous exécutons les scénarios de tests l’un après l’autre sur les deux images Linux.</p>
+
+<p>Le tableau ci-dessous, résume les résultats obtenus de latence (mesurés par <code class="highlighter-rouge">cyclictest</code>) pour chaque cas :</p>
+
+<p><img src="/media/post3/image-20201108171000501.png" alt="image-20201108171000501" /></p>
+
+<p>Pour les deux scénarii, nous remarquons une différence sur tout l’intervalle de latence, avec un écart plutôt important pour la latence maximale entre les deux images : rapport de 10 pour le premier scénario et de 4.5 pour le deuxième, ce qui est bien attendu, comme les taches temps réel de <code class="highlighter-rouge">cyclictest</code> prennent plus du temps <code class="highlighter-rouge">CPU</code> sur l’image RT (ayant un noyau préemptif) que sur l’image normale.</p>
+
+<p><strong>Références</strong></p>
+
+<p>https://www.yoctoproject.org/docs/1.6/bitbake-user-manual/bitbake-user-manual.html</p>
+
+<p>https://www.yoctoproject.org/docs/2.5/dev-manual/dev-manual.html#understanding-and-creating-layers.</p>
+
+<p>https://bootlin.com/doc/training/yocto/yocto-labs.pdf</p>
+
+<p>https://imxdev.gitlab.io/tutorial/How_to_inspect_OpenEmbedded_kickstart_wic_files/</p>
+
+
+  </div>
+
+</article>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Abderrahim LAKBIR's Blog</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li>L.Abderrahim</li>
+          <li><a href="mailto:abderrahim.lakbir@etu.univ-lyon1.fr">abderrahim.lakbir@etu.univ-lyon1.fr</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2">
+        <ul class="social-media-list">
+          
+          <li>
+            <a href="https://github.com/lakabd" target="_blank"><span class="icon icon--github"><svg viewBox="0 0 16 16"><path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/></svg>
+</span><span class="username">lakabd</span></a>
+
+          </li>
+          
+
+          
+          <li>
+            <a href="https://www.linkedin.com/in/lakbir-abderrahim" target="_blank"><span class="icon icon--linkedin"><svg viewBox="0 0 16 16"><path fill="#828282" d="M13.632 13.635h-2.37V9.922c0-.886-.018-2.025-1.234-2.025-1.235 0-1.424.964-1.424 1.96v3.778h-2.37V6H8.51v1.04h.03c.318-.6 1.092-1.233 2.247-1.233 2.4 0 2.845 1.58 2.845 3.637v4.188zM3.558 4.955c-.762 0-1.376-.617-1.376-1.377 0-.758.614-1.375 1.376-1.375.76 0 1.376.617 1.376 1.375 0 .76-.617 1.377-1.376 1.377zm1.188 8.68H2.37V6h2.376v7.635zM14.816 0H1.18C.528 0 0 .516 0 1.153v13.694C0 15.484.528 16 1.18 16h13.635c.652 0 1.185-.516 1.185-1.153V1.153C16 .516 15.467 0 14.815 0z"/></svg>
+</span><span class="username">lakbir-abderrahim</span></a>
+
+          </li>
+          
+
+          
+
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-3">
+        <p style="font-family: 'Dishonorable Mention';">
+          Welcome to my blog.
+<br>
+          &copy; L.Abderrahim 2020 PowredBy <a href="https://jekyllrb.com/" target="_blank">Jekyll</a>.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

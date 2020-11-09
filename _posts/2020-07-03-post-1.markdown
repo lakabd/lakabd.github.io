@@ -2,6 +2,7 @@
 layout: post
 title:  "Linux kernel module : Building a soft UART for the Raspberry Pi - part1"
 date:   2020-07-03 17:44:54 +0200
+language: EN
 categories: linux-driver
 excerpt_separator: <!--end_excerpt-->
 ---
@@ -15,7 +16,7 @@ Unfortunately, all versions of the `RPi` until version 3, comes with [only two U
 
 The idea behind this project, comes to tackle this specific problem by creating a software `UART` compatible with all Linux based boards including the `RPi`. Because it's a software implementation, it has only the minimal features required to establish a reliable serial connection. As you will find throughout this 2-parts write up, the software implementation obviously can't compete with the real hardware port, nevertheless, it offers a decent alternative.
 
-You’ll find all the written code in my [Github](https://www.blogger.com/blog/post/edit/1828726825959781021/5433115005355325235).
+You’ll find all the written code in my **[Github](https://www.blogger.com/blog/post/edit/1828726825959781021/5433115005355325235)**.
 
 ## Linux driver
 
@@ -120,7 +121,7 @@ after each write (read) the `head` (`tail`) pointer is incremented. This modific
 3. Functions to get the status of the buffer:
 	```c
    bool isBufferFull(struct buffer* buffer);
-bool isBufferEmpty(struct buffer* buffer);
+   bool isBufferEmpty(struct buffer* buffer);
    ```
 
 #### Bottom half
@@ -135,7 +136,7 @@ Now, let’s start our implementation of the low-level `UART` protocol. To make 
 
 In a new file `Csoft_uart.c` we start the definition of our main functions:
 
-1.   `INIT_fct`:
+- `INIT_fct`:
 
 The first function is the `init` function, in which we start by initializing the Rx and Tx buffers, the `GPIO` pins (*note* : the idle state of the Tx pin is high), and we reserve the Rx line interrupt to be able to start receiving data (in the `ISR`) asap. We initialize also a reception `tasklet` that is used to pass Rx data over to the top layer (this will be discussed further below). 
 
@@ -176,7 +177,7 @@ return 0;
 }
 ```
 
-2. `Tx_fct`:
+- `Tx_fct`:
 
 The transmit function is implemented as a simple while loop in which we retrieve data – word by word – from the Tx_buffer and send it bit per bit, along with a start bit at the beginning and a stop bit at the end of each data word.
 
@@ -223,7 +224,7 @@ return 0;
 
 We’ve used the `ndelay()` function instead of `htimer` (which is a high resolution timer used in time precision based events) because the costs of frequently enabling and disabling `htimers`, in our use case, was experimentally judged of more harm than good (compared to using the `*delay()` function family) especially for high baudrate values.
 
-3. `Rx_fct`:
+- `Rx_fct`:
 
 The implementation of the receive function is divided in two parts: the first part, which is the critical one, directly implemented in the `ISR` of the Rx line and handles the sampling of the received bits, and a second part, implemented in a `tasklet`, responsible of passing the received data over to the top layer.
 
@@ -268,7 +269,6 @@ return IRQ_HANDLED;
 }
 ```
 
-
 In contrary to what their name implies, `tasklets` are not small tasks/threads, they are simply a mechanism that allows `ISRs` to execute a non-critical portion of the code outside its context. The `tasklet` is executed asap after the `ISR` is ended. Yet, only one call to the `tasklet` can be scheduled, if the `tasklet` is called a second time only one instance is executed. In our case we implemented a while loop inside the `Rx_tsaklet` function in which we read data continually from the `rx_buffer` and send it up to the top layer.
 
  ```c
@@ -288,7 +288,7 @@ tty_flip_buffer_push(&port->state->port);
 }
  ```
 
-4. `Close_fct`:
+- `Close_fct`:
 
 Lastly, we implement the close function to properly free the used resources:  free `IRQ` + free `GPIOs` + kill any scheduled `tasklet`.
 ```c
@@ -306,13 +306,11 @@ return 0;
 ```
 
 
-At the end of the implementation we can test our code by registering it directly as a simple module (not `tty`) and verify the correctness of the output using a logic analyzer or simply connecting the `GPIO` pins `17 & 27` to the ports of a usb/serial adapter. Feel free to test this part yourself.
+At the end of the implementation we can test our code by registering it directly as a simple module (not `tty`) and verify the correctness of the output using a logic analyzer or simply connecting the `GPIO` pins 17 & 27 to the ports of a usb/serial adapter. Feel free to test this part yourself.
 
-For me, I think we are done with this first part, long part, I will implement the top half of the driver in the part2 of this write-up. Also, for the testing part, we will see a real test of the driver in a Serial Line Internet Protocol (`SLIP`), all of that until the driver is complete. See you in the next part.
+For me, I think we are done with this first part, long part, I will implement the top half of the driver in the part2 of this write-up. Also, for the testing part, we will see a real test of the driver in a Serial Line Internet Protocol (`SLIP`), all of that until the driver is complete. 
 
- 
 
-Thank you for reading.
-
+See you in the next part.
 
 A.L
