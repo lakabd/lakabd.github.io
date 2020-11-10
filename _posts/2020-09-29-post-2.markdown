@@ -323,7 +323,7 @@ A.L
 
 
 
-### Références 
+### References 
 
 Low Level Serial API : [https://www.kernel.org/doc/Documentation/serial/driver](https://www.kernel.org/doc/Documentation/serial/driver)
 

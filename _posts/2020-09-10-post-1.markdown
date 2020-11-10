@@ -315,7 +315,7 @@ See you in the next part.
 
 A.L
 
-### Références 
+### References 
 
 Raspberry Pi uarts : [https://www.raspberrypi.org/documentation/configuration/uart.md](https://www.raspberrypi.org/documentation/configuration/uart.md)
 
