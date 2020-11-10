@@ -6,16 +6,16 @@
 </description>
     <link>https://lakabd.github.io/</link>
     <atom:link href="https://lakabd.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 09 Nov 2020 02:31:34 +0100</pubDate>
-    <lastBuildDate>Mon, 09 Nov 2020 02:31:34 +0100</lastBuildDate>
+    <pubDate>Tue, 10 Nov 2020 16:41:59 +0100</pubDate>
+    <lastBuildDate>Tue, 10 Nov 2020 16:41:59 +0100</lastBuildDate>
     <generator>Jekyll v3.1.6</generator>
     
       <item>
         <title>Projet YOCTO : Build d’une image Linux-RT pour Beaglebone Black</title>
-        <description>&lt;p&gt;La carte Beaglbone black (&lt;code class=&quot;highlighter-rouge&quot;&gt;BBB&lt;/code&gt;) est une plateforme embarquée open source utilisée dans plusieurs domaines éducationnels ainsi qu’industriels. Equipée d’un &lt;code class=&quot;highlighter-rouge&quot;&gt;SOC&lt;/code&gt; am533x de Texas Instrument, cette plateforme est capable de tourner différents systèmes d’exploitation comme Linux, Android, WinCE… 
+        <description>&lt;p&gt;La carte Beaglbone black (&lt;code class=&quot;highlighter-rouge&quot;&gt;BBB&lt;/code&gt;) est une plateforme embarquée open source utilisée dans plusieurs domaines éducationnels ainsi qu’industriels. Equipée d’un &lt;code class=&quot;highlighter-rouge&quot;&gt;SOC&lt;/code&gt; am335x de Texas Instrument, cette plateforme est capable de tourner différents systèmes d’exploitation comme Linux, Android, WinCE… 
 &lt;!--end_excerpt--&gt;&lt;/p&gt;
 
-&lt;p&gt;Dans certaines applications, notamment dans le domaine industriel, il est parfois exigé d’avoir une performance temps réel du system, ce qui nécessite l’utilisation d’une solution temps réel soit software ou hardware. Dans ce manuscrit, nous allons s’intéresser à une solution software open source dédiée au system Linux connue sous le nom : le projet &lt;code class=&quot;highlighter-rouge&quot;&gt;PREEMPT_RT&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Dans certaines applications, notamment dans le domaine industriel, il est parfois exigé d’avoir une performance temps réel du system, ce qui nécessite l’utilisation d’une solution temps réel soit software ou hardware. Dans cet article, nous allons s’intéresser à une solution software open source dédiée au system Linux connue sous le nom : le projet &lt;code class=&quot;highlighter-rouge&quot;&gt;PREEMPT_RT&lt;/code&gt;.&lt;/p&gt;
 
 &lt;blockquote&gt;
   &lt;p&gt;“Controlling a laser with Linux is crazy, but everyone in this room is crazy in his own way. So, if you want to use Linux to control an industrial welding laser, I have no problem with your using PREEMPT_RT.” – Linus Torvalds&lt;/p&gt;
@@ -23,15 +23,15 @@
 
 &lt;p&gt;Le projet &lt;code class=&quot;highlighter-rouge&quot;&gt;PREEMPT_RT&lt;/code&gt; (fondé et maintenu par Thomas Gleixner, Ingo Molnar et de nombreux autres collaborateurs) offre une solution temps réel « souple » qui se présente sous forme d’un patch qu’on peut appliquer sur un noyau Linux standard pour améliorer ses performances pour le temps réel. L’application du patch &lt;code class=&quot;highlighter-rouge&quot;&gt;PREEMPT_RT&lt;/code&gt; se fait sur le code source d’un noyau Linux avant sa compilation. Toutefois, comme le patch n’est disponible que pour des versions majeures et mineures bien précises du noyau Linux standard, l’application du patch peut s’avérer d’une grande complexité à cause des problèmes de compatibilité.&lt;/p&gt;
 
-&lt;p&gt;L’objectif de cet article est d’investiguer une technique automatisée de construction d’image Linux embarqué avec le fameux projet Yocto, en construisant une image Linux patchée avec &lt;code class=&quot;highlighter-rouge&quot;&gt;PREEMPT_RT&lt;/code&gt; pour la cible &lt;code class=&quot;highlighter-rouge&quot;&gt;BBB&lt;/code&gt;. Dans La première partie, une introduction au système de construction du projet Yocto et de ses importants outils est présentée. Dans la deuxième partie, nous allons voir la configuration réalisée pour la construction d’une image Linux-RT basée sur un noyau fourni par Texas Instrument, puis, nous concluons par faire une comparaison de la performance offerte par cette solution temps réel, par rapport à une implémentation Linux normal.&lt;/p&gt;
+&lt;p&gt;L’objectif de cet article est d’investiguer une technique automatisée de construction d’image Linux embarqué avec le fameux projet Yocto, ceci, en construisant une image Linux patchée avec &lt;code class=&quot;highlighter-rouge&quot;&gt;PREEMPT_RT&lt;/code&gt; pour la cible &lt;code class=&quot;highlighter-rouge&quot;&gt;BBB&lt;/code&gt;. Dans La première partie, une introduction au système de construction du projet Yocto et de ses importants outils est présentée. Dans la deuxième partie, nous allons voir la configuration réalisée pour la construction d’une image Linux-RT basée sur un noyau fourni par Texas Instrument, puis, nous concluons par faire une comparaison de la performance offerte par cette solution temps réel, par rapport à une implémentation Linux normal.&lt;/p&gt;
 
 &lt;h2 id=&quot;projet-yocto&quot;&gt;Projet Yocto&lt;/h2&gt;
 
 &lt;p&gt;Le projet Yocto est un projet collaboratif, open source, créé par la fondation Linux en 2011 avec l’objectif de fournir et de créer des outils et processus interopérables pour la construction des images Linux personnalisées dédiées aux systèmes embarqués et IoT, peut-import leurs architectures hardware. Le projet Yocto offre un environnement de développement flexible, qui permet aux développeurs de systèmes embarqués de collaborer à travers une technologie partagée de piles logicielles, de configurations et des meilleures pratiques utilisées pour créer des images Linux personnalisées.&lt;/p&gt;
 
-&lt;p&gt;Ce projet est basé sur une plateforme appelée &lt;code class=&quot;highlighter-rouge&quot;&gt;OpenEmbedded&lt;/code&gt; créée en 2003, qui est une plateforme de compilation croisée automatisée, dédiée à la construction des images Linux embarquée. Le system de construction de cette plateforme utilise un outil qui s’appelle &lt;code class=&quot;highlighter-rouge&quot;&gt;Bitbake&lt;/code&gt;, similaire à l’outil &lt;code class=&quot;highlighter-rouge&quot;&gt;GNU Make&lt;/code&gt;, et qui permet de spécifier les scriptes de construction, appelée « recettes » dans le langage &lt;code class=&quot;highlighter-rouge&quot;&gt;Bitbake&lt;/code&gt;, d’un package donné. Les recettes &lt;code class=&quot;highlighter-rouge&quot;&gt;Bitbake&lt;/code&gt; (extension &lt;code class=&quot;highlighter-rouge&quot;&gt;.bb&lt;/code&gt;) incluent la liste des dépendances de chaque package, la location du source code, et toutes autres informations nécessaires qui permettent aux outils &lt;code class=&quot;highlighter-rouge&quot;&gt;d’OpenEmbedded&lt;/code&gt; de créer une image Linux bootable.&lt;/p&gt;
+&lt;p&gt;Ce projet est basé sur une plateforme appelée &lt;code class=&quot;highlighter-rouge&quot;&gt;OpenEmbedded&lt;/code&gt; créée en 2003, qui est une plateforme de compilation croisée automatisée, dédiée à la construction des images Linux embarquée. Le system de construction de cette plateforme utilise un outil qui s’appelle &lt;code class=&quot;highlighter-rouge&quot;&gt;Bitbake&lt;/code&gt;, similaire à l’outil &lt;code class=&quot;highlighter-rouge&quot;&gt;GNU Make&lt;/code&gt;, et qui permet de spécifier les scriptes de construction - appelée « recettes » dans le langage &lt;code class=&quot;highlighter-rouge&quot;&gt;Bitbake&lt;/code&gt; - d’un package donné. Les recettes &lt;code class=&quot;highlighter-rouge&quot;&gt;Bitbake&lt;/code&gt; (extension &lt;code class=&quot;highlighter-rouge&quot;&gt;.bb&lt;/code&gt;) incluent la liste des dépendances de chaque package, la location du source code, et toutes autres informations nécessaires qui permettent aux outils &lt;code class=&quot;highlighter-rouge&quot;&gt;d’OpenEmbedded&lt;/code&gt; de créer une image Linux bootable.&lt;/p&gt;
 
-&lt;p&gt;Dans la repos officielle ( 🕊 j’ai l’habitude d’utiliser le mot “la repos” à la place de “ le dépôt” conformément au mot anglais dominant : Repository ) du projet Yocto : git.yoctoproject.org, nous trouvons une distribution de référence appelée &lt;code class=&quot;highlighter-rouge&quot;&gt;Poky&lt;/code&gt;, qui contient le système de construction &lt;code class=&quot;highlighter-rouge&quot;&gt;OpenEmbedded&lt;/code&gt; plus un ensemble de métadonnées permettant aux développeurs d’amorcer la construction de leurs distributions personnalisées. Cette référence est fournie comme une spécification de base et elle permet - out of the box - de construire une image bootable pour un système embarqué typique.&lt;/p&gt;
+&lt;p&gt;Dans la repos officielle ( 🕊 j’ai l’habitude d’utiliser le mot “la repos” à la place de “ le dépôt” conformément au mot anglais dominant : Repository ) du projet Yocto : &lt;a href=&quot;https://git.yoctoproject.org/&quot;&gt;git.yoctoproject.org&lt;/a&gt;, nous trouvons une distribution de référence appelée &lt;code class=&quot;highlighter-rouge&quot;&gt;Poky&lt;/code&gt;, qui contient le système de construction &lt;code class=&quot;highlighter-rouge&quot;&gt;OpenEmbedded&lt;/code&gt; plus un ensemble de métadonnées permettant aux développeurs d’amorcer la construction de leurs distributions personnalisées. Cette référence est fournie comme une spécification de base et elle permet - out of the box - de construire une image bootable pour un système embarqué typique.&lt;/p&gt;
 
 &lt;p&gt;La figure ci-dessous illustre la relation de &lt;code class=&quot;highlighter-rouge&quot;&gt;Poky&lt;/code&gt; avec le reste du projet :&lt;/p&gt;
 
@@ -41,7 +41,7 @@
 
 &lt;h3 id=&quot;modèle-en-couche&quot;&gt;Modèle en couche&lt;/h3&gt;
 
-&lt;p&gt;L’un des points forts du projet Yocto et que chaque aspect de construction est contrôlé via les métadonnées. En effet, Il est possible d’ajouter/modifier des couches de métadonnées permettant l’ajout de nouvelles piles logicielles, du support pour le nouveau hardware (Board Support Packages) ou même créer des nouveaux types d’images (image minimale, basique…).&lt;/p&gt;
+&lt;p&gt;L’un des points forts du projet Yocto et que chaque aspect de construction est contrôlé via des métadonnées. En effet, Il est possible d’ajouter/modifier des couches de métadonnées permettant l’ajout de nouvelles piles logicielles, du support pour le nouveau hardware (Board Support Packages) ou même créer des nouveaux types d’images (image minimale, basique…).&lt;/p&gt;
 
 &lt;p&gt;Le modèle en couche du projet Yocto sert à isoler les différentes personnalisations ajoutées, dans le but d’améliorer la flexibilité et la réutilisabilité de ses différents processus de construction : plus la structure est modulaire plus et facile de coopérer avec les changements futurs.&lt;/p&gt;
 
@@ -53,14 +53,14 @@
 
 &lt;ul&gt;
   &lt;li&gt;
-    &lt;p&gt;Le fichier de configuration &lt;code class=&quot;highlighter-rouge&quot;&gt;layer.conf&lt;/code&gt; indiquant les différentes recettes offertes par cette couche.&lt;/p&gt;
+    &lt;p&gt;Un fichier de configuration &lt;code class=&quot;highlighter-rouge&quot;&gt;layer.conf&lt;/code&gt; indiquant les différentes recettes offertes par cette couche.&lt;/p&gt;
   &lt;/li&gt;
   &lt;li&gt;
-    &lt;p&gt;Le dossier machine qui contient le fichier de configuration &lt;code class=&quot;highlighter-rouge&quot;&gt;machine.conf&lt;/code&gt; liée à la plateforme cible.&lt;/p&gt;
+    &lt;p&gt;Un dossier machine qui contient le fichier de configuration &lt;code class=&quot;highlighter-rouge&quot;&gt;machine.conf&lt;/code&gt; lié à la plateforme cible.&lt;/p&gt;
   &lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;Plus des dossiers de recettes qui ajoutent le support de nouvelles fonctionnalités, ou étendent (fichiers &lt;code class=&quot;highlighter-rouge&quot;&gt;.bbappend&lt;/code&gt;) celles existantes déjà dans autres couches. Dans la couche de la figure ci-dessus, nous trouvons, en plus du conf, le dossier &lt;code class=&quot;highlighter-rouge&quot;&gt;recipes-kernel&lt;/code&gt; qui contient une recette &lt;code class=&quot;highlighter-rouge&quot;&gt;Bitbake&lt;/code&gt; (.bb) pour la construction d’un noyau Linux.&lt;/p&gt;
+&lt;p&gt;Plus des dossiers de recettes qui ajoutent le support de nouvelles fonctionnalités, ou étendent celles existantes déjà dans autres couches  (fichiers &lt;code class=&quot;highlighter-rouge&quot;&gt;.bbappend&lt;/code&gt;). Dans la couche de la figure ci-dessus, nous trouvons, en plus du conf, le dossier &lt;code class=&quot;highlighter-rouge&quot;&gt;recipes-kernel&lt;/code&gt; qui contient une recette &lt;code class=&quot;highlighter-rouge&quot;&gt;Bitbake&lt;/code&gt; (.bb) pour la construction d’un noyau Linux.&lt;/p&gt;
 
 &lt;h4 id=&quot;couche-bsp&quot;&gt;Couche BSP&lt;/h4&gt;
 
@@ -128,7 +128,7 @@
   &lt;li&gt;Installation des packages essentiels :&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;Ce sont les principaux outils et packages nécessaires à la construction avec le projet Yocto. Ceux-ci incluent le compilateur &lt;code class=&quot;highlighter-rouge&quot;&gt;GNU GCC&lt;/code&gt;, un système de contrôle de versions, plus d’autres packages selon ce qu’on veut faire (ajouter du support graphique, générer la doc … etc). Ci-dessous la commande pour obtenir l’essentiel sur Ubuntu :&lt;/p&gt;
+&lt;p&gt;Ce sont les principaux outils et packages nécessaires à la construction avec le projet Yocto. Ceux-ci incluent le compilateur &lt;code class=&quot;highlighter-rouge&quot;&gt;GNU GCC&lt;/code&gt;, un système de contrôle de versions, plus d’autres packages, selon ce qu’on veut faire (ajouter du support graphique, générer la doc … etc). Ci-dessous la commande pour obtenir l’essentiel sur Ubuntu :&lt;/p&gt;
 
 &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sudo &lt;/span&gt;apt-get install gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping libsdl1.2-dev xterm
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
@@ -137,9 +137,9 @@
   &lt;li&gt;Récupération des couches de métadonnées nécessaires :&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;Pour notre cible &lt;code class=&quot;highlighter-rouge&quot;&gt;BBB&lt;/code&gt;, nous allons se baser sur la couche &lt;code class=&quot;highlighter-rouge&quot;&gt;Poky&lt;/code&gt;, mais en plus, nous avons besoin de la couche &lt;code class=&quot;highlighter-rouge&quot;&gt;BSP&lt;/code&gt; spécifique au hardware de la carte &lt;code class=&quot;highlighter-rouge&quot;&gt;BBB&lt;/code&gt;. Pour cela nous allons utiliser la couche &lt;code class=&quot;highlighter-rouge&quot;&gt;meta-ti&lt;/code&gt; de la part de Texas Instrument (qui est le vendeur du &lt;code class=&quot;highlighter-rouge&quot;&gt;SOC&lt;/code&gt; amx335 de la carte &lt;code class=&quot;highlighter-rouge&quot;&gt;BBB&lt;/code&gt;) fournie dans la repos officielle du projet Yocto. Dans cette couche, en plus des recettes &lt;code class=&quot;highlighter-rouge&quot;&gt;BSP&lt;/code&gt; qui incluent les configurations hardwares, nous trouvons les recettes de construction des noyaux &lt;code class=&quot;highlighter-rouge&quot;&gt;Linux-rt&lt;/code&gt; et &lt;code class=&quot;highlighter-rouge&quot;&gt;non-rt&lt;/code&gt; fournies par TI ainsi que des recettes personnalisées avec des fonctionnalités supplémentaires compatibles avec la carte &lt;code class=&quot;highlighter-rouge&quot;&gt;BBB&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Pour notre cible &lt;code class=&quot;highlighter-rouge&quot;&gt;BBB&lt;/code&gt;, nous allons se baser sur la couche &lt;code class=&quot;highlighter-rouge&quot;&gt;Poky&lt;/code&gt;, mais en plus, nous avons besoin de la couche &lt;code class=&quot;highlighter-rouge&quot;&gt;BSP&lt;/code&gt; spécifique au hardware de la carte &lt;code class=&quot;highlighter-rouge&quot;&gt;BBB&lt;/code&gt;. Pour cela, nous allons utiliser la couche &lt;code class=&quot;highlighter-rouge&quot;&gt;meta-ti&lt;/code&gt; de la part de Texas Instrument (qui est le vendeur du &lt;code class=&quot;highlighter-rouge&quot;&gt;SOC&lt;/code&gt; amx335 de la carte &lt;code class=&quot;highlighter-rouge&quot;&gt;BBB&lt;/code&gt;) fournie dans la repos officielle du projet Yocto. Dans cette couche, en plus des recettes &lt;code class=&quot;highlighter-rouge&quot;&gt;BSP&lt;/code&gt; qui incluent les configurations hardwares, nous trouvons les recettes de construction des noyaux &lt;code class=&quot;highlighter-rouge&quot;&gt;Linux-rt&lt;/code&gt; et &lt;code class=&quot;highlighter-rouge&quot;&gt;non-rt&lt;/code&gt; fournies par TI, ainsi que des recettes personnalisées avec des fonctionnalités supplémentaires compatibles avec la carte &lt;code class=&quot;highlighter-rouge&quot;&gt;BBB&lt;/code&gt;.&lt;/p&gt;
 
-&lt;p&gt;Nous avons besoin donc, de deux couches : &lt;code class=&quot;highlighter-rouge&quot;&gt;Poky&lt;/code&gt;, plus &lt;code class=&quot;highlighter-rouge&quot;&gt;meta-ti&lt;/code&gt;. Comme ces deux couches sont des repos Git contenant plusieurs branches, nous allons se baser sur les commits &lt;code class=&quot;highlighter-rouge&quot;&gt;sumo19.0.0&lt;/code&gt; (de la branche sumo) pour &lt;code class=&quot;highlighter-rouge&quot;&gt;Poky&lt;/code&gt; et &lt;code class=&quot;highlighter-rouge&quot;&gt;ti2018.02&lt;/code&gt; pour &lt;code class=&quot;highlighter-rouge&quot;&gt;meta-ti&lt;/code&gt; (ce choix est basé sur les travaux de &lt;a href=&quot;https://bootlin.com/doc/training/yocto/yocto-labs.pdf&quot;&gt;Bootlin&lt;/a&gt;).&lt;/p&gt;
+&lt;p&gt;Pour notre image nous avons besoin donc, de deux couches : &lt;code class=&quot;highlighter-rouge&quot;&gt;Poky&lt;/code&gt;, plus &lt;code class=&quot;highlighter-rouge&quot;&gt;meta-ti&lt;/code&gt;. Comme ces deux couches sont des repos Git contenant plusieurs branches, nous allons se baser sur les commits &lt;code class=&quot;highlighter-rouge&quot;&gt;sumo19.0.0&lt;/code&gt; (de la branche sumo) pour &lt;code class=&quot;highlighter-rouge&quot;&gt;Poky&lt;/code&gt; et &lt;code class=&quot;highlighter-rouge&quot;&gt;ti2018.02&lt;/code&gt; pour &lt;code class=&quot;highlighter-rouge&quot;&gt;meta-ti&lt;/code&gt; (ce choix est basé sur les travaux de &lt;a href=&quot;https://bootlin.com/doc/training/yocto/yocto-labs.pdf&quot;&gt;Bootlin&lt;/a&gt;).&lt;/p&gt;
 
 &lt;p&gt;Sous un nouveau dossier &lt;code class=&quot;highlighter-rouge&quot;&gt;yocto_workspace&lt;/code&gt;, exécuter les commandes suivantes dans le terminal pour récupérer le code source des deux repos :&lt;/p&gt;
 
@@ -172,7 +172,7 @@
 
     &lt;ul&gt;
       &lt;li&gt;
-        &lt;p&gt;Configuration de la machine cible : &lt;code class=&quot;highlighter-rouge&quot;&gt;MACHINE = &quot;beaglebone&quot;&lt;/code&gt;
+        &lt;p&gt;Configuration de la machine cible : &lt;code class=&quot;highlighter-rouge&quot;&gt;MACHINE = &quot;beaglebone&quot;&lt;/code&gt;.
 &lt;em&gt;Attention&lt;/em&gt; : à ne pas confondre avec &lt;code class=&quot;highlighter-rouge&quot;&gt;beaglbone-yocto&lt;/code&gt;, ce sont deux machines différentes. N’oubliez pas de commenter toute autre définition de cette variable.&lt;/p&gt;
       &lt;/li&gt;
       &lt;li&gt;
@@ -184,7 +184,7 @@
   &lt;li&gt;
     &lt;p&gt;Configuration de la couche &lt;code class=&quot;highlighter-rouge&quot;&gt;meta-ti&lt;/code&gt; :&lt;/p&gt;
 
-    &lt;p&gt;Ce dossier représente notre couche &lt;code class=&quot;highlighter-rouge&quot;&gt;BSP&lt;/code&gt;. Il contient des fichiers de configuration pour plusieurs machines sous le répertoire &lt;code class=&quot;highlighter-rouge&quot;&gt;conf/machine&lt;/code&gt;. Parmi ces fichiers, on trouve &lt;code class=&quot;highlighter-rouge&quot;&gt;beaglbone.conf&lt;/code&gt; qui correspond au fichier de configuration pour notre carte &lt;code class=&quot;highlighter-rouge&quot;&gt;BBB&lt;/code&gt; (c’est le nom de ce fichier que nous avons donné à la variable &lt;code class=&quot;highlighter-rouge&quot;&gt;MACHINE&lt;/code&gt; dans le fichier &lt;code class=&quot;highlighter-rouge&quot;&gt;local.conf&lt;/code&gt; de la couche &lt;code class=&quot;highlighter-rouge&quot;&gt;Poky&lt;/code&gt;). En plus du dossier &lt;code class=&quot;highlighter-rouge&quot;&gt;conf&lt;/code&gt;, nous trouvons des dossiers de recettes pour différents packages : &lt;code class=&quot;highlighter-rouge&quot;&gt;kernel&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;connectivity&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;graphics&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;multimedia&lt;/code&gt;…&lt;/p&gt;
+    &lt;p&gt;Cette couche représente notre couche &lt;code class=&quot;highlighter-rouge&quot;&gt;BSP&lt;/code&gt;. Elle contient des fichiers de configuration pour plusieurs machines sous le répertoire &lt;code class=&quot;highlighter-rouge&quot;&gt;conf/machine&lt;/code&gt;. Parmi ces fichiers, on trouve &lt;code class=&quot;highlighter-rouge&quot;&gt;beaglbone.conf&lt;/code&gt; qui correspond au fichier de configuration pour notre carte &lt;code class=&quot;highlighter-rouge&quot;&gt;BBB&lt;/code&gt; (c’est le nom de ce fichier que nous avons donné à la variable &lt;code class=&quot;highlighter-rouge&quot;&gt;MACHINE&lt;/code&gt; dans le fichier &lt;code class=&quot;highlighter-rouge&quot;&gt;local.conf&lt;/code&gt; de la couche &lt;code class=&quot;highlighter-rouge&quot;&gt;Poky&lt;/code&gt;). En plus du dossier &lt;code class=&quot;highlighter-rouge&quot;&gt;conf&lt;/code&gt;, nous trouvons des dossiers de recettes pour différents packages : &lt;code class=&quot;highlighter-rouge&quot;&gt;kernel&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;connectivity&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;graphics&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;multimedia&lt;/code&gt;…&lt;/p&gt;
 
     &lt;p&gt;Sous le dossier &lt;code class=&quot;highlighter-rouge&quot;&gt;recipes-kernel/linux&lt;/code&gt; nous trouvons la recette du &lt;code class=&quot;highlighter-rouge&quot;&gt;noyau-rt&lt;/code&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;linux-ti-staging-rt_4.14.bb&lt;/code&gt; que nous allons utiliser pour construire notre image temps réel.&lt;/p&gt;
 
@@ -239,13 +239,13 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
 
 &lt;p&gt;Tous les artéfacts générés sont spécifiés par les recettes &lt;code class=&quot;highlighter-rouge&quot;&gt;Bitbake&lt;/code&gt; liées à l’image construite : &lt;code class=&quot;highlighter-rouge&quot;&gt;image-core-minimal.bb&lt;/code&gt;, et à la machine &lt;code class=&quot;highlighter-rouge&quot;&gt;beaglbone.conf&lt;/code&gt;.&lt;/p&gt;
 
-&lt;p&gt;Pour le temps de construction écoulé de cette image minimale, il dépend essentiellement de deux paramètres : le débit internet et la puissance de calcul de la machine hôte. Sur ma machine locale (4 coeurs et un débit moyen de 200Ko/s), le build de l’image minimal a pris environ 6 heures. Après le premier build, Le projet Yocto garde le code source de tous les packages qui a construit sous le dossier &lt;code class=&quot;highlighter-rouge&quot;&gt;build/downloads&lt;/code&gt; pour ne pas les retélécharger dans les prochains build.&lt;/p&gt;
+&lt;p&gt;Pour le temps de construction écoulé de cette image minimale, il dépend essentiellement de deux paramètres : le débit internet et la puissance de calcul de la machine hôte. Sur ma machine locale (2 coeurs et un débit moyen de 500Ko/s), le build de l’image minimal a pris environ 6 heures. Après le premier build, Le projet Yocto garde le code source de tous les packages qui a construit sous le dossier &lt;code class=&quot;highlighter-rouge&quot;&gt;build/downloads&lt;/code&gt; pour ne pas les retélécharger dans les prochains build.&lt;/p&gt;
 
-&lt;p&gt;Comme cette image n’est qu’une image minimale, elle ne contient que le nécessaire des outils et librairie pour faire marcher une version Linux minimaliste. Donc, on y trouve ni outil de communication : &lt;code class=&quot;highlighter-rouge&quot;&gt;telnet&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt;.., ni package manager et surtout aucun outil de tests temps réel comme le package &lt;code class=&quot;highlighter-rouge&quot;&gt;rt-tests&lt;/code&gt; ou &lt;code class=&quot;highlighter-rouge&quot;&gt;hwlatdetect&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Comme cette image n’est qu’une image minimale, elle ne contient que le nécessaire des outils et librairie pour faire marcher une version Linux minimaliste. Donc, on y trouve ni outil de communication : &lt;code class=&quot;highlighter-rouge&quot;&gt;telnet&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt;.., ni package manager et surtout aucun outil de tests temps réel comme le package &lt;code class=&quot;highlighter-rouge&quot;&gt;rt-tests&lt;/code&gt;.&lt;/p&gt;
 
 &lt;p&gt;Pour résoudre cela, l’une des solutions est d’essayer d’installer tous les packages manquants de façon manuelle. Or, à cause des différentes dépendances entre les packages et les librairies… cette solution risque d’être très fastidieuse. La deuxième solution, qui est plutôt à portée de main, est de demander à &lt;code class=&quot;highlighter-rouge&quot;&gt;Bitbake&lt;/code&gt; de les installer pour nous, comme les recettes de tous les packages dont nous avons besoin existent déjà dans la couche &lt;code class=&quot;highlighter-rouge&quot;&gt;Poky&lt;/code&gt;.&lt;/p&gt;
 
-&lt;p&gt;Nous avons décidé donc, de créer une nouvelle image (recette) appelée &lt;code class=&quot;highlighter-rouge&quot;&gt;beaglbone-ti-image-rt.bb&lt;/code&gt;, dans laquelle nous spécifions toutes les caractéristiques et packages supplémentaires dont nous avons besoin. Pour ne pas recréer toute la base de l’image Linux, cette nouvelle image sera basée sur l’image existante &lt;code class=&quot;highlighter-rouge&quot;&gt;core-image-base.bb&lt;/code&gt; qui inclut le support complet de la cible.&lt;/p&gt;
+&lt;p&gt;Nous avons décidé de créer une nouvelle image (recette) appelée &lt;code class=&quot;highlighter-rouge&quot;&gt;beaglbone-ti-image-rt.bb&lt;/code&gt;, dans laquelle nous spécifions toutes les caractéristiques et packages supplémentaires dont nous avons besoin. Pour ne pas recréer une recette à zéro de toute la base de l’image, nous allons baser celle-là sur l’image existante &lt;code class=&quot;highlighter-rouge&quot;&gt;core-image-base.bb&lt;/code&gt;.&lt;/p&gt;
 
 &lt;p&gt;Le contenu de cette nouvelle image est présenté dans la figure ci-dessous :&lt;/p&gt;
 
@@ -289,7 +289,7 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
 
 &lt;p&gt;&lt;img src=&quot;/media/post3/image-20201108170811599.png&quot; alt=&quot;image-20201108170811599&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;La commande &lt;code class=&quot;highlighter-rouge&quot;&gt;$ wic ls file.wic&lt;/code&gt; permet d’afficher les deux partitions contenues dans le fichier. Pour afficher le contenu de chaque partition, nous ajoutons le numéro de la partition devant le nom du fichier &lt;code class=&quot;highlighter-rouge&quot;&gt;$ wic ls file.wic:2&lt;/code&gt;. D’après la figure, nous remarquons que notre fichier &lt;code class=&quot;highlighter-rouge&quot;&gt;wic&lt;/code&gt; contient deux partitions : une de type &lt;code class=&quot;highlighter-rouge&quot;&gt;Fat16&lt;/code&gt; qui contient les fichiers du bootloader, et l’autre de type &lt;code class=&quot;highlighter-rouge&quot;&gt;ext4&lt;/code&gt; qui contient le system de fichier root.&lt;/p&gt;
+&lt;p&gt;La commande &lt;code class=&quot;highlighter-rouge&quot;&gt;$ wic ls file.wic&lt;/code&gt; permet d’afficher les deux partitions contenues dans le fichier. Pour afficher le contenu de chaque partition, nous ajoutons le numéro de la partition devant le nom du fichier &lt;code class=&quot;highlighter-rouge&quot;&gt;$ wic ls file.wic:2&lt;/code&gt;. D’après la figure ci-dessus, nous remarquons que notre fichier &lt;code class=&quot;highlighter-rouge&quot;&gt;wic&lt;/code&gt; contient deux partitions : une de type &lt;code class=&quot;highlighter-rouge&quot;&gt;Fat16&lt;/code&gt; qui contient les fichiers du bootloader, et l’autre de type &lt;code class=&quot;highlighter-rouge&quot;&gt;ext4&lt;/code&gt; qui contient le system de fichier root.&lt;/p&gt;
 
 &lt;p&gt;Avant de commencer le portage, nous insérons la carte microSD dans la machine hôte et nous exécutons la commande &lt;code class=&quot;highlighter-rouge&quot;&gt;lsblk&lt;/code&gt; pour savoir le nom du volume donné à la carte microSD :&lt;/p&gt;
 
@@ -414,20 +414,20 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
 
 &lt;p&gt;Pour les deux scénarii, nous remarquons une différence sur tout l’intervalle de latence, avec un écart plutôt important pour la latence maximale entre les deux images : rapport de 10 pour le premier scénario et de 4.5 pour le deuxième, ce qui est bien attendu, comme les taches temps réel de &lt;code class=&quot;highlighter-rouge&quot;&gt;cyclictest&lt;/code&gt; prennent plus du temps &lt;code class=&quot;highlighter-rouge&quot;&gt;CPU&lt;/code&gt; sur l’image RT (ayant un noyau préemptif) que sur l’image normale.&lt;/p&gt;
 
-&lt;p&gt;&lt;strong&gt;Références&lt;/strong&gt;&lt;/p&gt;
+&lt;h3 id=&quot;références&quot;&gt;Références&lt;/h3&gt;
 
-&lt;p&gt;https://www.yoctoproject.org/docs/1.6/bitbake-user-manual/bitbake-user-manual.html&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.yoctoproject.org/docs/1.6/bitbake-user-manual/bitbake-user-manual.html&quot;&gt;https://www.yoctoproject.org/docs/1.6/bitbake-user-manual/bitbake-user-manual.html&lt;/a&gt;&lt;/p&gt;
 
-&lt;p&gt;https://www.yoctoproject.org/docs/2.5/dev-manual/dev-manual.html#understanding-and-creating-layers.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.yoctoproject.org/docs/2.5/dev-manual/dev-manual.html&quot;&gt;https://www.yoctoproject.org/docs/2.5/dev-manual/dev-manual.html#understanding-and-creating-layers&lt;/a&gt;&lt;/p&gt;
 
-&lt;p&gt;https://bootlin.com/doc/training/yocto/yocto-labs.pdf&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://bootlin.com/doc/training/yocto/yocto-labs.pdf&quot;&gt;https://bootlin.com/doc/training/yocto/yocto-labs.pdf&lt;/a&gt;&lt;/p&gt;
 
-&lt;p&gt;https://imxdev.gitlab.io/tutorial/How_to_inspect_OpenEmbedded_kickstart_wic_files/&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://imxdev.gitlab.io/tutorial/How_to_inspect_OpenEmbedded_kickstart_wic_files/&quot;&gt;https://imxdev.gitlab.io/tutorial/How_to_inspect_OpenEmbedded_kickstart_wic_files/&lt;/a&gt;&lt;/p&gt;
 
 </description>
-        <pubDate>Thu, 10 Sep 2020 15:14:45 +0200</pubDate>
-        <link>https://lakabd.github.io/linux-driver/2020/09/10/post-3.html</link>
-        <guid isPermaLink="true">https://lakabd.github.io/linux-driver/2020/09/10/post-3.html</guid>
+        <pubDate>Fri, 30 Oct 2020 14:14:45 +0100</pubDate>
+        <link>https://lakabd.github.io/linux-driver/2020/10/30/post-3.html</link>
+        <guid isPermaLink="true">https://lakabd.github.io/linux-driver/2020/10/30/post-3.html</guid>
         
         
         <category>linux-driver</category>
@@ -453,16 +453,10 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
       &lt;li&gt;Registered using the function &lt;code class=&quot;highlighter-rouge&quot;&gt;uart_register_driver(&amp;amp;uart_driver)&lt;/code&gt;&lt;/li&gt;
     &lt;/ul&gt;
   &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;The structure representing the port included in the driver: &lt;code class=&quot;highlighter-rouge&quot;&gt;struct uart_port&lt;/code&gt;&lt;/p&gt;
-
+  &lt;li&gt;The structure representing the port included in the driver: &lt;code class=&quot;highlighter-rouge&quot;&gt;struct uart_port&lt;/code&gt;
     &lt;ul&gt;
-      &lt;li&gt;
-        &lt;p&gt;One instance for each port in the driver (at least one port must be defined. It’s possible to have many ports in a driver: &lt;code class=&quot;highlighter-rouge&quot;&gt;nr&lt;/code&gt; ports exactly)&lt;/p&gt;
-      &lt;/li&gt;
-      &lt;li&gt;
-        &lt;p&gt;Each port needs to added to the driver using the function &lt;code class=&quot;highlighter-rouge&quot;&gt;uart_add_one_port(&amp;amp;uart_driver, &amp;amp;uart_port)&lt;/code&gt;&lt;/p&gt;
-      &lt;/li&gt;
+      &lt;li&gt;One instance for each port in the driver (at least one port must be defined. It’s possible to have many ports in a driver: &lt;code class=&quot;highlighter-rouge&quot;&gt;nr&lt;/code&gt; ports exactly)&lt;/li&gt;
+      &lt;li&gt;Each port needs to added to the driver using the function &lt;code class=&quot;highlighter-rouge&quot;&gt;uart_add_one_port(&amp;amp;uart_driver, &amp;amp;uart_port)&lt;/code&gt;&lt;/li&gt;
     &lt;/ul&gt;
   &lt;/li&gt;
   &lt;li&gt;The structure containing the pointers to the port operations: &lt;code class=&quot;highlighter-rouge&quot;&gt;struct uart_ops&lt;/code&gt;&lt;/li&gt;
@@ -470,9 +464,7 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
 
 &lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;uart_state&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;tty_driver&lt;/code&gt; structures are automatically initialized when the driver is registered in the kernel, and they must not be defined.&lt;/p&gt;
 
-&lt;hr /&gt;
-
-&lt;p&gt;In a new file &lt;code class=&quot;highlighter-rouge&quot;&gt;module.c&lt;/code&gt; we start the definition of our driver:&lt;/p&gt;
+&lt;p&gt;In a new file &lt;code class=&quot;highlighter-rouge&quot;&gt;module.c&lt;/code&gt; we start the definition of the top half of our driver:&lt;/p&gt;
 
 &lt;ol&gt;
   &lt;li&gt;
@@ -638,14 +630,15 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ENOIOCTLCMD&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/*mandatory return if cmd not supported*/&lt;/span&gt;
  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
 
-    &lt;blockquote&gt;
-      &lt;p&gt;&lt;em&gt;note:&lt;/em&gt; To ease the driver debugging and to better understand when each operation is called, I added for each operation a &lt;code class=&quot;highlighter-rouge&quot;&gt;printk(“…….function name !”)&lt;/code&gt;.&lt;/p&gt;
-    &lt;/blockquote&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;Module &lt;code class=&quot;highlighter-rouge&quot;&gt;init&lt;/code&gt; and module &lt;code class=&quot;highlighter-rouge&quot;&gt;exit&lt;/code&gt;:&lt;/p&gt;
-  &lt;/li&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;&lt;em&gt;note:&lt;/em&gt; To ease the driver debugging and to better understand when each operation is called, I added for each operation a &lt;code class=&quot;highlighter-rouge&quot;&gt;printk(“…….function name !”)&lt;/code&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Module &lt;code class=&quot;highlighter-rouge&quot;&gt;init&lt;/code&gt; and module &lt;code class=&quot;highlighter-rouge&quot;&gt;exit&lt;/code&gt;:&lt;/li&gt;
 &lt;/ol&gt;
 
 &lt;p&gt;After defining all the necessary operations, now we need to define the &lt;code class=&quot;highlighter-rouge&quot;&gt;module_init&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;module_exit&lt;/code&gt; functions. These two functions are the homologue of the &lt;code class=&quot;highlighter-rouge&quot;&gt;main()&lt;/code&gt; function in a regular program and they are as mandatory as the &lt;code class=&quot;highlighter-rouge&quot;&gt;main()&lt;/code&gt; function is. The &lt;code class=&quot;highlighter-rouge&quot;&gt;init&lt;/code&gt; function is the function that is called when the driver is loaded into the Linux kernel, and the &lt;code class=&quot;highlighter-rouge&quot;&gt;exit&lt;/code&gt; one is called when the driver is unloaded&lt;/p&gt;
@@ -693,7 +686,7 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
 
 &lt;p&gt;In my case, as my &lt;code class=&quot;highlighter-rouge&quot;&gt;RPi&lt;/code&gt; doesn’t execute the latest Raspbian image, the command above gave me a much recent kernel headers version which is not compatible with my kernel version, so i had to install it manually. (if you want to find out your image kernel version, execute the command: &lt;code class=&quot;highlighter-rouge&quot;&gt;$ uname -a&lt;/code&gt;)&lt;/p&gt;
 
-&lt;p&gt;The trick I used to get the proper Linux kernel headers version, is by searching in the Debian archive repository http://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/ for all the previous versions of the &lt;code class=&quot;highlighter-rouge&quot;&gt;raspberrypi-kernel-headers&lt;/code&gt; package and download the one corresponding to my kernel version. Remembering the time I downloaded the Raspbian image, made it really easy to guess which package is the one, as each package has a publication date. Packages in the archive are disposed as &lt;code class=&quot;highlighter-rouge&quot;&gt;deb&lt;/code&gt; files and can be installed using the command below:&lt;/p&gt;
+&lt;p&gt;The trick I used to get the proper Linux kernel headers version, is by searching in the Debian archive repository &lt;a href=&quot;http://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/&quot;&gt;http://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/&lt;/a&gt; for all the previous versions of the &lt;code class=&quot;highlighter-rouge&quot;&gt;raspberrypi-kernel-headers&lt;/code&gt; package and download the one corresponding to my kernel version. Remembering the time I downloaded the Raspbian image, made it really easy to guess which package is the one, as each package has a publication date. Packages in the archive are disposed as &lt;code class=&quot;highlighter-rouge&quot;&gt;deb&lt;/code&gt; files and can be installed using the command below:&lt;/p&gt;
 
 &lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;$ sudo dpkg -i raspberrypi-kernel-headers_&amp;lt;pack-version&amp;gt;_armhf.deb&lt;/code&gt;&lt;/p&gt;
 
@@ -741,10 +734,21 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
 
 &lt;p&gt;A.L&lt;/p&gt;
 
+&lt;h3 id=&quot;références&quot;&gt;Références&lt;/h3&gt;
+
+&lt;p&gt;Low Level Serial API : &lt;a href=&quot;https://www.kernel.org/doc/Documentation/serial/driver&quot;&gt;https://www.kernel.org/doc/Documentation/serial/driver&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Chapter 18. TTY Drivers : &lt;a href=&quot;https://www.oreilly.com/library/view/linux-devicedrivers/0596005903/ch18.html&quot;&gt;https://www.oreilly.com/library/view/linux-devicedrivers/0596005903/ch18.html&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Linux TTY driver–Uart_driver bottom layer : &lt;a href=&quot;https://blog.csdn.net/sharecode/article/details/9196591&quot;&gt;https://blog.csdn.net/sharecode/article/details/9196591&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Linux uart underlying device driver detailed : &lt;a href=&quot;https://blog.csdn.net/weixin_38696651/article/details/89431600&quot;&gt;https://blog.csdn.net/weixin_38696651/article/details/89431600&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;A preliminary study of tty-analysis of uart driver framework : &lt;a href=&quot;https://blog.csdn.net/lizuobin2/article/details/51773305/&quot;&gt;https://blog.csdn.net/lizuobin2/article/details/51773305/&lt;/a&gt;&lt;/p&gt;
 </description>
-        <pubDate>Thu, 09 Jul 2020 18:24:03 +0200</pubDate>
-        <link>https://lakabd.github.io/linux-driver/2020/07/09/post-2.html</link>
-        <guid isPermaLink="true">https://lakabd.github.io/linux-driver/2020/07/09/post-2.html</guid>
+        <pubDate>Tue, 29 Sep 2020 18:24:03 +0200</pubDate>
+        <link>https://lakabd.github.io/linux-driver/2020/09/29/post-2.html</link>
+        <guid isPermaLink="true">https://lakabd.github.io/linux-driver/2020/09/29/post-2.html</guid>
         
         
         <category>linux-driver</category>
@@ -809,7 +813,7 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
 
 &lt;p&gt;&lt;img src=&quot;/media/post1/clip_image004.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;In fact, the use &lt;strong&gt;&lt;em&gt;serial core&lt;/em&gt;&lt;/strong&gt; interface needs the definition of three main structures:&lt;/p&gt;
+&lt;p&gt;In fact, the use of &lt;strong&gt;&lt;em&gt;serial core&lt;/em&gt;&lt;/strong&gt; interface needs the definition of three main structures:&lt;/p&gt;
 
 &lt;ul&gt;
   &lt;li&gt;
@@ -881,7 +885,7 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
 
 &lt;p&gt;&lt;img src=&quot;/media/post1/clip_image010.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;In a new file &lt;code class=&quot;highlighter-rouge&quot;&gt;Csoft_uart.c&lt;/code&gt; we start the definition of our main functions:&lt;/p&gt;
+&lt;p&gt;In a new file &lt;code class=&quot;highlighter-rouge&quot;&gt;soft_uart.c&lt;/code&gt; we start the definition of our main functions:&lt;/p&gt;
 
 &lt;ul&gt;
   &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;INIT_fct&lt;/code&gt;:&lt;/li&gt;
@@ -1016,7 +1020,7 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;In contrary to what their name implies, &lt;code class=&quot;highlighter-rouge&quot;&gt;tasklets&lt;/code&gt; are not small tasks/threads, they are simply a mechanism that allows &lt;code class=&quot;highlighter-rouge&quot;&gt;ISRs&lt;/code&gt; to execute a non-critical portion of the code outside its context. The &lt;code class=&quot;highlighter-rouge&quot;&gt;tasklet&lt;/code&gt; is executed asap after the &lt;code class=&quot;highlighter-rouge&quot;&gt;ISR&lt;/code&gt; is ended. Yet, only one call to the &lt;code class=&quot;highlighter-rouge&quot;&gt;tasklet&lt;/code&gt; can be scheduled, if the &lt;code class=&quot;highlighter-rouge&quot;&gt;tasklet&lt;/code&gt; is called a second time only one instance is executed. In our case we implemented a while loop inside the &lt;code class=&quot;highlighter-rouge&quot;&gt;Rx_tsaklet&lt;/code&gt; function in which we read data continually from the &lt;code class=&quot;highlighter-rouge&quot;&gt;rx_buffer&lt;/code&gt; and send it up to the top layer.&lt;/p&gt;
+&lt;p&gt;In contrary to what their name implies, &lt;code class=&quot;highlighter-rouge&quot;&gt;tasklets&lt;/code&gt; are not small tasks/threads, they are simply a mechanism that allows &lt;code class=&quot;highlighter-rouge&quot;&gt;ISRs&lt;/code&gt; to execute a non-critical portion of the code outside its context. The &lt;code class=&quot;highlighter-rouge&quot;&gt;tasklet&lt;/code&gt; is executed asap after the &lt;code class=&quot;highlighter-rouge&quot;&gt;ISR&lt;/code&gt; is ended. Yet, only one call to the &lt;code class=&quot;highlighter-rouge&quot;&gt;tasklet&lt;/code&gt; can be scheduled, if the &lt;code class=&quot;highlighter-rouge&quot;&gt;tasklet&lt;/code&gt; is called a second time, only one instance is executed. In our case we implemented a while loop inside the &lt;code class=&quot;highlighter-rouge&quot;&gt;Rx_tsaklet&lt;/code&gt; function in which we read data continually from the &lt;code class=&quot;highlighter-rouge&quot;&gt;rx_buffer&lt;/code&gt; and send it up to the top layer.&lt;/p&gt;
 
 &lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;rx_tasklet_function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;unsigned&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;long&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
@@ -1059,10 +1063,20 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
 &lt;p&gt;See you in the next part.&lt;/p&gt;
 
 &lt;p&gt;A.L&lt;/p&gt;
+
+&lt;h3 id=&quot;références&quot;&gt;Références&lt;/h3&gt;
+
+&lt;p&gt;Raspberry Pi uarts : &lt;a href=&quot;https://www.raspberrypi.org/documentation/configuration/uart.md&quot;&gt;https://www.raspberrypi.org/documentation/configuration/uart.md&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Timing Errors in Serial Communication: &lt;a href=&quot;http://www.robotroom.com/Asynchronous-SerialCommunication-2.html&quot;&gt;http://www.robotroom.com/Asynchronous-SerialCommunication-2.html&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Linux serial driver : &lt;a href=&quot;https://bootlin.com/doc/legacy/serial-drivers/linux-serial-drivers.pdf&quot;&gt;https://bootlin.com/doc/legacy/serial-drivers/linux-serial-drivers.pdf&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Chapter 18. TTY Drivers : &lt;a href=&quot;https://www.oreilly.com/library/view/linux-devicedrivers/0596005903/ch18.html&quot;&gt;https://www.oreilly.com/library/view/linux-devicedrivers/0596005903/ch18.html&lt;/a&gt;&lt;/p&gt;
 </description>
-        <pubDate>Fri, 03 Jul 2020 17:44:54 +0200</pubDate>
-        <link>https://lakabd.github.io/linux-driver/2020/07/03/post-1.html</link>
-        <guid isPermaLink="true">https://lakabd.github.io/linux-driver/2020/07/03/post-1.html</guid>
+        <pubDate>Thu, 10 Sep 2020 17:44:54 +0200</pubDate>
+        <link>https://lakabd.github.io/linux-driver/2020/09/10/post-1.html</link>
+        <guid isPermaLink="true">https://lakabd.github.io/linux-driver/2020/09/10/post-1.html</guid>
         
         
         <category>linux-driver</category>

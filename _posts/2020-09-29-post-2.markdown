@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Linux kernel module : Building a soft UART for the Raspberry Pi - part2"
-date:   2020-07-09 18:24:03 +0200
+date:   2020-09-29 18:24:03 +0200
 language: EN
 categories: linux-driver
 excerpt_separator: <!--end_excerpt-->
@@ -22,18 +22,17 @@ If you recall, from the diagram above, we have three main structures to define f
   - Registered using the function `uart_register_driver(&uart_driver)`
 
 - The structure representing the port included in the driver: `struct uart_port`
-
   - One instance for each port in the driver (at least one port must be defined. It’s possible to have many ports in a driver: `nr` ports exactly)
-
   - Each port needs to added to the driver using the function `uart_add_one_port(&uart_driver, &uart_port)`
 
 - The structure containing the pointers to the port operations: `struct uart_ops`
 
 `uart_state` and `tty_driver` structures are automatically initialized when the driver is registered in the kernel, and they must not be defined.
 
----
 
-In a new file `module.c` we start the definition of our driver:
+
+
+In a new file `module.c` we start the definition of the top half of our driver:
 
 1. `uart_driver` structure:
 
@@ -214,7 +213,7 @@ In a new file `module.c` we start the definition of our driver:
 	
 	
 
-	> *note:* To ease the driver debugging and to better understand when each operation is called, I added for each operation a `printk(“…….function name !”)`.
+> *note:* To ease the driver debugging and to better understand when each operation is called, I added for each operation a `printk(“…….function name !”)`.
 
  
 
@@ -267,7 +266,7 @@ To compile our Linux module, we need to have on our system the Linux headers of 
 
 In my case, as my `RPi` doesn’t execute the latest Raspbian image, the command above gave me a much recent kernel headers version which is not compatible with my kernel version, so i had to install it manually. (if you want to find out your image kernel version, execute the command: `$ uname -a`)
 
-The trick I used to get the proper Linux kernel headers version, is by searching in the Debian archive repository http://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/ for all the previous versions of the `raspberrypi-kernel-headers` package and download the one corresponding to my kernel version. Remembering the time I downloaded the Raspbian image, made it really easy to guess which package is the one, as each package has a publication date. Packages in the archive are disposed as `deb` files and can be installed using the command below:
+The trick I used to get the proper Linux kernel headers version, is by searching in the Debian archive repository [http://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/](http://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/) for all the previous versions of the `raspberrypi-kernel-headers` package and download the one corresponding to my kernel version. Remembering the time I downloaded the Raspbian image, made it really easy to guess which package is the one, as each package has a publication date. Packages in the archive are disposed as `deb` files and can be installed using the command below:
 
 `$ sudo dpkg -i raspberrypi-kernel-headers_<pack-version>_armhf.deb`
 
@@ -322,3 +321,16 @@ Coming soon…
 
 A.L
 
+
+
+### Références 
+
+Low Level Serial API : [https://www.kernel.org/doc/Documentation/serial/driver](https://www.kernel.org/doc/Documentation/serial/driver)
+
+Chapter 18. TTY Drivers : [https://www.oreilly.com/library/view/linux-devicedrivers/0596005903/ch18.html](https://www.oreilly.com/library/view/linux-devicedrivers/0596005903/ch18.html)
+
+Linux TTY driver--Uart_driver bottom layer : [https://blog.csdn.net/sharecode/article/details/9196591](https://blog.csdn.net/sharecode/article/details/9196591)
+
+Linux uart underlying device driver detailed : [https://blog.csdn.net/weixin_38696651/article/details/89431600](https://blog.csdn.net/weixin_38696651/article/details/89431600)
+
+A preliminary study of tty-analysis of uart driver framework : [https://blog.csdn.net/lizuobin2/article/details/51773305/](https://blog.csdn.net/lizuobin2/article/details/51773305/)

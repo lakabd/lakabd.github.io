@@ -1,22 +1,22 @@
 ---
 layout: post
 title:  "Projet YOCTO : Build d’une image Linux-RT pour Beaglebone Black"
-date:   2020-09-10 15:14:45 +0200
+date:   2020-10-30 15:14:45 +0200
 language: FR
 categories: linux-driver
 excerpt_separator: <!--end_excerpt-->
 ---
 
-La carte Beaglbone black (`BBB`) est une plateforme embarquée open source utilisée dans plusieurs domaines éducationnels ainsi qu’industriels. Equipée d’un `SOC` am533x de Texas Instrument, cette plateforme est capable de tourner différents systèmes d’exploitation comme Linux, Android, WinCE… 
+La carte Beaglbone black (`BBB`) est une plateforme embarquée open source utilisée dans plusieurs domaines éducationnels ainsi qu’industriels. Equipée d’un `SOC` am335x de Texas Instrument, cette plateforme est capable de tourner différents systèmes d’exploitation comme Linux, Android, WinCE… 
 <!--end_excerpt-->
 
-Dans certaines applications, notamment dans le domaine industriel, il est parfois exigé d’avoir une performance temps réel du system, ce qui nécessite l’utilisation d’une solution temps réel soit software ou hardware. Dans ce manuscrit, nous allons s’intéresser à une solution software open source dédiée au system Linux connue sous le nom : le projet `PREEMPT_RT`.
+Dans certaines applications, notamment dans le domaine industriel, il est parfois exigé d’avoir une performance temps réel du system, ce qui nécessite l’utilisation d’une solution temps réel soit software ou hardware. Dans cet article, nous allons s’intéresser à une solution software open source dédiée au system Linux connue sous le nom : le projet `PREEMPT_RT`.
 
 > "Controlling a laser with Linux is crazy, but everyone in this room is crazy in his own way. So, if you want to use Linux to control an industrial welding laser, I have no problem with your using PREEMPT_RT." -- Linus Torvalds
 
 Le projet `PREEMPT_RT` (fondé et maintenu par Thomas Gleixner, Ingo Molnar et de nombreux autres collaborateurs) offre une solution temps réel « souple » qui se présente sous forme d’un patch qu’on peut appliquer sur un noyau Linux standard pour améliorer ses performances pour le temps réel. L’application du patch `PREEMPT_RT` se fait sur le code source d’un noyau Linux avant sa compilation. Toutefois, comme le patch n’est disponible que pour des versions majeures et mineures bien précises du noyau Linux standard, l’application du patch peut s’avérer d’une grande complexité à cause des problèmes de compatibilité.
 
-L’objectif de cet article est d’investiguer une technique automatisée de construction d’image Linux embarqué avec le fameux projet Yocto, en construisant une image Linux patchée avec `PREEMPT_RT` pour la cible `BBB`. Dans La première partie, une introduction au système de construction du projet Yocto et de ses importants outils est présentée. Dans la deuxième partie, nous allons voir la configuration réalisée pour la construction d’une image Linux-RT basée sur un noyau fourni par Texas Instrument, puis, nous concluons par faire une comparaison de la performance offerte par cette solution temps réel, par rapport à une implémentation Linux normal. 
+L’objectif de cet article est d’investiguer une technique automatisée de construction d’image Linux embarqué avec le fameux projet Yocto, ceci, en construisant une image Linux patchée avec `PREEMPT_RT` pour la cible `BBB`. Dans La première partie, une introduction au système de construction du projet Yocto et de ses importants outils est présentée. Dans la deuxième partie, nous allons voir la configuration réalisée pour la construction d’une image Linux-RT basée sur un noyau fourni par Texas Instrument, puis, nous concluons par faire une comparaison de la performance offerte par cette solution temps réel, par rapport à une implémentation Linux normal. 
 
  
 
@@ -24,9 +24,9 @@ L’objectif de cet article est d’investiguer une technique automatisée de co
 
 Le projet Yocto est un projet collaboratif, open source, créé par la fondation Linux en 2011 avec l’objectif de fournir et de créer des outils et processus interopérables pour la construction des images Linux personnalisées dédiées aux systèmes embarqués et IoT, peut-import leurs architectures hardware. Le projet Yocto offre un environnement de développement flexible, qui permet aux développeurs de systèmes embarqués de collaborer à travers une technologie partagée de piles logicielles, de configurations et des meilleures pratiques utilisées pour créer des images Linux personnalisées.
 
-Ce projet est basé sur une plateforme appelée `OpenEmbedded` créée en 2003, qui est une plateforme de compilation croisée automatisée, dédiée à la construction des images Linux embarquée. Le system de construction de cette plateforme utilise un outil qui s’appelle `Bitbake`, similaire à l’outil `GNU Make`, et qui permet de spécifier les scriptes de construction, appelée « recettes » dans le langage `Bitbake`, d’un package donné. Les recettes `Bitbake` (extension `.bb`) incluent la liste des dépendances de chaque package, la location du source code, et toutes autres informations nécessaires qui permettent aux outils `d’OpenEmbedded` de créer une image Linux bootable.
+Ce projet est basé sur une plateforme appelée `OpenEmbedded` créée en 2003, qui est une plateforme de compilation croisée automatisée, dédiée à la construction des images Linux embarquée. Le system de construction de cette plateforme utilise un outil qui s’appelle `Bitbake`, similaire à l’outil `GNU Make`, et qui permet de spécifier les scriptes de construction - appelée « recettes » dans le langage `Bitbake` - d’un package donné. Les recettes `Bitbake` (extension `.bb`) incluent la liste des dépendances de chaque package, la location du source code, et toutes autres informations nécessaires qui permettent aux outils `d’OpenEmbedded` de créer une image Linux bootable.
 
-Dans la repos officielle ( 🕊 j'ai l'habitude d'utiliser le mot "la repos" à la place de " le dépôt" conformément au mot anglais dominant : Repository ) du projet Yocto : git.yoctoproject.org, nous trouvons une distribution de référence appelée `Poky`, qui contient le système de construction `OpenEmbedded` plus un ensemble de métadonnées permettant aux développeurs d’amorcer la construction de leurs distributions personnalisées. Cette référence est fournie comme une spécification de base et elle permet - out of the box - de construire une image bootable pour un système embarqué typique.
+Dans la repos officielle ( 🕊 j'ai l'habitude d'utiliser le mot "la repos" à la place de " le dépôt" conformément au mot anglais dominant : Repository ) du projet Yocto : [git.yoctoproject.org](https://git.yoctoproject.org/), nous trouvons une distribution de référence appelée `Poky`, qui contient le système de construction `OpenEmbedded` plus un ensemble de métadonnées permettant aux développeurs d’amorcer la construction de leurs distributions personnalisées. Cette référence est fournie comme une spécification de base et elle permet - out of the box - de construire une image bootable pour un système embarqué typique.
 
 La figure ci-dessous illustre la relation de `Poky` avec le reste du projet :
 
@@ -36,7 +36,7 @@ Pour en savoir plus sur `Poky`, voir le lien : [Reference Embedded Distribution 
 
 ### Modèle en couche
 
-L’un des points forts du projet Yocto et que chaque aspect de construction est contrôlé via les métadonnées. En effet, Il est possible d’ajouter/modifier des couches de métadonnées permettant l’ajout de nouvelles piles logicielles, du support pour le nouveau hardware (Board Support Packages) ou même créer des nouveaux types d’images (image minimale, basique…).
+L’un des points forts du projet Yocto et que chaque aspect de construction est contrôlé via des métadonnées. En effet, Il est possible d’ajouter/modifier des couches de métadonnées permettant l’ajout de nouvelles piles logicielles, du support pour le nouveau hardware (Board Support Packages) ou même créer des nouveaux types d’images (image minimale, basique…).
 
 Le modèle en couche du projet Yocto sert à isoler les différentes personnalisations ajoutées, dans le but d’améliorer la flexibilité et la réutilisabilité de ses différents processus de construction : plus la structure est modulaire plus et facile de coopérer avec les changements futurs.
 
@@ -46,11 +46,11 @@ Chaque couche Yocto respecte une hiérarchie bien précise, permettant de garder
 
 Une couche Yocto est composée d’un dossier obligatoire conf qui contient :
 
-- Le fichier de configuration `layer.conf` indiquant les différentes recettes offertes par cette couche.
+- Un fichier de configuration `layer.conf` indiquant les différentes recettes offertes par cette couche.
 
-- Le dossier machine qui contient le fichier de configuration `machine.conf` liée à la plateforme cible. 
+- Un dossier machine qui contient le fichier de configuration `machine.conf` lié à la plateforme cible. 
 
-Plus des dossiers de recettes qui ajoutent le support de nouvelles fonctionnalités, ou étendent (fichiers `.bbappend`) celles existantes déjà dans autres couches. Dans la couche de la figure ci-dessus, nous trouvons, en plus du conf, le dossier `recipes-kernel` qui contient une recette `Bitbake` (.bb) pour la construction d’un noyau Linux.
+Plus des dossiers de recettes qui ajoutent le support de nouvelles fonctionnalités, ou étendent celles existantes déjà dans autres couches  (fichiers `.bbappend`). Dans la couche de la figure ci-dessus, nous trouvons, en plus du conf, le dossier `recipes-kernel` qui contient une recette `Bitbake` (.bb) pour la construction d’un noyau Linux.
 
 #### Couche BSP
 
@@ -100,7 +100,7 @@ Pour utiliser le projet Yocto, il est nécessaire d’abord d’avoir une machin
 
 - Installation des packages essentiels :
 
-Ce sont les principaux outils et packages nécessaires à la construction avec le projet Yocto. Ceux-ci incluent le compilateur `GNU GCC`, un système de contrôle de versions, plus d'autres packages selon ce qu’on veut faire (ajouter du support graphique, générer la doc … etc). Ci-dessous la commande pour obtenir l'essentiel sur Ubuntu :
+Ce sont les principaux outils et packages nécessaires à la construction avec le projet Yocto. Ceux-ci incluent le compilateur `GNU GCC`, un système de contrôle de versions, plus d'autres packages, selon ce qu’on veut faire (ajouter du support graphique, générer la doc … etc). Ci-dessous la commande pour obtenir l'essentiel sur Ubuntu :
 
 ```bash
 $ sudo apt-get install gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping libsdl1.2-dev xterm
@@ -108,9 +108,9 @@ $ sudo apt-get install gawk wget git-core diffstat unzip texinfo gcc-multilib bu
 
 - Récupération des couches de métadonnées nécessaires :
 
-Pour notre cible `BBB`, nous allons se baser sur la couche `Poky`, mais en plus, nous avons besoin de la couche `BSP` spécifique au hardware de la carte `BBB`. Pour cela nous allons utiliser la couche `meta-ti` de la part de Texas Instrument (qui est le vendeur du `SOC` amx335 de la carte `BBB`) fournie dans la repos officielle du projet Yocto. Dans cette couche, en plus des recettes `BSP` qui incluent les configurations hardwares, nous trouvons les recettes de construction des noyaux `Linux-rt` et `non-rt` fournies par TI ainsi que des recettes personnalisées avec des fonctionnalités supplémentaires compatibles avec la carte `BBB`.
+Pour notre cible `BBB`, nous allons se baser sur la couche `Poky`, mais en plus, nous avons besoin de la couche `BSP` spécifique au hardware de la carte `BBB`. Pour cela, nous allons utiliser la couche `meta-ti` de la part de Texas Instrument (qui est le vendeur du `SOC` amx335 de la carte `BBB`) fournie dans la repos officielle du projet Yocto. Dans cette couche, en plus des recettes `BSP` qui incluent les configurations hardwares, nous trouvons les recettes de construction des noyaux `Linux-rt` et `non-rt` fournies par TI, ainsi que des recettes personnalisées avec des fonctionnalités supplémentaires compatibles avec la carte `BBB`.
 
-Nous avons besoin donc, de deux couches : `Poky`, plus `meta-ti`. Comme ces deux couches sont des repos Git contenant plusieurs branches, nous allons se baser sur les commits `sumo19.0.0` (de la branche sumo) pour `Poky` et `ti2018.02` pour `meta-ti` (ce choix est basé sur les travaux de [Bootlin](https://bootlin.com/doc/training/yocto/yocto-labs.pdf)).
+Pour notre image nous avons besoin donc, de deux couches : `Poky`, plus `meta-ti`. Comme ces deux couches sont des repos Git contenant plusieurs branches, nous allons se baser sur les commits `sumo19.0.0` (de la branche sumo) pour `Poky` et `ti2018.02` pour `meta-ti` (ce choix est basé sur les travaux de [Bootlin](https://bootlin.com/doc/training/yocto/yocto-labs.pdf)).
 
 Sous un nouveau dossier `yocto_workspace`, exécuter les commandes suivantes dans le terminal pour récupérer le code source des deux repos :
 
@@ -141,7 +141,7 @@ $ cd meta-ti && git checkout -b BBB ti2018.02
 
    Pour le deuxième fichier `local.conf`, il sert à définir toutes les configurations `Poky` de l’utilisateur local. Dans ce fichier nous définissons des valeurs pour différentes variables de configuration. Toute variable définie dans ce fichier remplace toute autre définition de cette variable dans la repos `Poky` (sauf si celle-ci est codée en dur : en utilisant `=` à la place de `?=`). Ci-dessous, les modifications que nous devons apporter à ce fichier pour notre cible `BBB` :
 
-   - Configuration de la machine cible : `MACHINE = "beaglebone"`
+   - Configuration de la machine cible : `MACHINE = "beaglebone"`.
      *Attention* : à ne pas confondre avec `beaglbone-yocto`, ce sont deux machines différentes. N’oubliez pas de commenter toute autre définition de cette variable.
 
    - Ajouter les packages essentiels de développement ( `gcc`, `make`, `pkgconfig` …) plus les outils de profilage (module `lttng`, `valgrind`, …) à l’image générée : 
@@ -149,7 +149,7 @@ $ cd meta-ti && git checkout -b BBB ti2018.02
 
 2. Configuration de la couche `meta-ti` :
 
-   Ce dossier représente notre couche `BSP`. Il contient des fichiers de configuration pour plusieurs machines sous le répertoire `conf/machine`. Parmi ces fichiers, on trouve `beaglbone.conf` qui correspond au fichier de configuration pour notre carte `BBB` (c’est le nom de ce fichier que nous avons donné à la variable `MACHINE` dans le fichier `local.conf` de la couche `Poky`). En plus du dossier `conf`, nous trouvons des dossiers de recettes pour différents packages : `kernel`, `connectivity`, `graphics`, `multimedia`... 
+   Cette couche représente notre couche `BSP`. Elle contient des fichiers de configuration pour plusieurs machines sous le répertoire `conf/machine`. Parmi ces fichiers, on trouve `beaglbone.conf` qui correspond au fichier de configuration pour notre carte `BBB` (c’est le nom de ce fichier que nous avons donné à la variable `MACHINE` dans le fichier `local.conf` de la couche `Poky`). En plus du dossier `conf`, nous trouvons des dossiers de recettes pour différents packages : `kernel`, `connectivity`, `graphics`, `multimedia`... 
 
    Sous le dossier `recipes-kernel/linux` nous trouvons la recette du `noyau-rt` `linux-ti-staging-rt_4.14.bb` que nous allons utiliser pour construire notre image temps réel.
 
@@ -194,13 +194,13 @@ A la fin d’exécution de `Bitbake`, les artéfacts de construction sont géné
 
 Tous les artéfacts générés sont spécifiés par les recettes `Bitbake` liées à l’image construite : `image-core-minimal.bb`, et à la machine `beaglbone.conf`.
 
-Pour le temps de construction écoulé de cette image minimale, il dépend essentiellement de deux paramètres : le débit internet et la puissance de calcul de la machine hôte. Sur ma machine locale (4 coeurs et un débit moyen de 200Ko/s), le build de l’image minimal a pris environ 6 heures. Après le premier build, Le projet Yocto garde le code source de tous les packages qui a construit sous le dossier `build/downloads` pour ne pas les retélécharger dans les prochains build.
+Pour le temps de construction écoulé de cette image minimale, il dépend essentiellement de deux paramètres : le débit internet et la puissance de calcul de la machine hôte. Sur ma machine locale (2 coeurs et un débit moyen de 500Ko/s), le build de l’image minimal a pris environ 6 heures. Après le premier build, Le projet Yocto garde le code source de tous les packages qui a construit sous le dossier `build/downloads` pour ne pas les retélécharger dans les prochains build.
 
-Comme cette image n’est qu’une image minimale, elle ne contient que le nécessaire des outils et librairie pour faire marcher une version Linux minimaliste. Donc, on y trouve ni outil de communication : `telnet`, `ssh`.., ni package manager et surtout aucun outil de tests temps réel comme le package `rt-tests` ou `hwlatdetect`.
+Comme cette image n’est qu’une image minimale, elle ne contient que le nécessaire des outils et librairie pour faire marcher une version Linux minimaliste. Donc, on y trouve ni outil de communication : `telnet`, `ssh`.., ni package manager et surtout aucun outil de tests temps réel comme le package `rt-tests`.
 
 Pour résoudre cela, l’une des solutions est d’essayer d’installer tous les packages manquants de façon manuelle. Or, à cause des différentes dépendances entre les packages et les librairies… cette solution risque d’être très fastidieuse. La deuxième solution, qui est plutôt à portée de main, est de demander à `Bitbake` de les installer pour nous, comme les recettes de tous les packages dont nous avons besoin existent déjà dans la couche `Poky`. 
 
-Nous avons décidé donc, de créer une nouvelle image (recette) appelée `beaglbone-ti-image-rt.bb`, dans laquelle nous spécifions toutes les caractéristiques et packages supplémentaires dont nous avons besoin. Pour ne pas recréer toute la base de l’image Linux, cette nouvelle image sera basée sur l’image existante `core-image-base.bb` qui inclut le support complet de la cible.
+Nous avons décidé de créer une nouvelle image (recette) appelée `beaglbone-ti-image-rt.bb`, dans laquelle nous spécifions toutes les caractéristiques et packages supplémentaires dont nous avons besoin. Pour ne pas recréer une recette à zéro de toute la base de l’image, nous allons baser celle-là sur l’image existante `core-image-base.bb`.
 
 Le contenu de cette nouvelle image est présenté dans la figure ci-dessous :
 
@@ -238,7 +238,7 @@ Premièrement, nous commençons par décompresser le fichier `beaglebone-ti-imag
 
 ![image-20201108170811599](/media/post3/image-20201108170811599.png)
 
-La commande `$ wic ls file.wic` permet d’afficher les deux partitions contenues dans le fichier. Pour afficher le contenu de chaque partition, nous ajoutons le numéro de la partition devant le nom du fichier `$ wic ls file.wic:2`. D’après la figure, nous remarquons que notre fichier `wic` contient deux partitions : une de type `Fat16` qui contient les fichiers du bootloader, et l’autre de type `ext4` qui contient le system de fichier root.
+La commande `$ wic ls file.wic` permet d’afficher les deux partitions contenues dans le fichier. Pour afficher le contenu de chaque partition, nous ajoutons le numéro de la partition devant le nom du fichier `$ wic ls file.wic:2`. D’après la figure ci-dessus, nous remarquons que notre fichier `wic` contient deux partitions : une de type `Fat16` qui contient les fichiers du bootloader, et l’autre de type `ext4` qui contient le system de fichier root.
 
 Avant de commencer le portage, nous insérons la carte microSD dans la machine hôte et nous exécutons la commande `lsblk` pour savoir le nom du volume donné à la carte microSD :
 
@@ -349,15 +349,15 @@ Pour les deux scénarii, nous remarquons une différence sur tout l’intervalle
 
  
 
-**Références** 
+### Références 
 
-https://www.yoctoproject.org/docs/1.6/bitbake-user-manual/bitbake-user-manual.html
+[https://www.yoctoproject.org/docs/1.6/bitbake-user-manual/bitbake-user-manual.html](https://www.yoctoproject.org/docs/1.6/bitbake-user-manual/bitbake-user-manual.html)
 
-https://www.yoctoproject.org/docs/2.5/dev-manual/dev-manual.html#understanding-and-creating-layers.
+[https://www.yoctoproject.org/docs/2.5/dev-manual/dev-manual.html#understanding-and-creating-layers](https://www.yoctoproject.org/docs/2.5/dev-manual/dev-manual.html)
 
-https://bootlin.com/doc/training/yocto/yocto-labs.pdf
+[https://bootlin.com/doc/training/yocto/yocto-labs.pdf](https://bootlin.com/doc/training/yocto/yocto-labs.pdf)
 
-https://imxdev.gitlab.io/tutorial/How_to_inspect_OpenEmbedded_kickstart_wic_files/
+[https://imxdev.gitlab.io/tutorial/How_to_inspect_OpenEmbedded_kickstart_wic_files/](https://imxdev.gitlab.io/tutorial/How_to_inspect_OpenEmbedded_kickstart_wic_files/)
 
  
 

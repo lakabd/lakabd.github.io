@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Linux kernel module : Building a soft UART for the Raspberry Pi - part1"
-date:   2020-07-03 17:44:54 +0200
+date:   2020-09-10 17:44:54 +0200
 language: EN
 categories: linux-driver
 excerpt_separator: <!--end_excerpt-->
@@ -63,7 +63,7 @@ After thorough analysis, in the diagram below I show the important structural li
 
 ![img](/media/post1/clip_image004.png)
 
-In fact, the use ***serial core*** interface needs the definition of three main structures:
+In fact, the use of ***serial core*** interface needs the definition of three main structures:
 
 - The structure representing the driver: `struct uart_driver`
 
@@ -134,7 +134,7 @@ Now, let’s start our implementation of the low-level `UART` protocol. To make 
 
  
 
-In a new file `Csoft_uart.c` we start the definition of our main functions:
+In a new file `soft_uart.c` we start the definition of our main functions:
 
 - `INIT_fct`:
 
@@ -269,7 +269,7 @@ return IRQ_HANDLED;
 }
 ```
 
-In contrary to what their name implies, `tasklets` are not small tasks/threads, they are simply a mechanism that allows `ISRs` to execute a non-critical portion of the code outside its context. The `tasklet` is executed asap after the `ISR` is ended. Yet, only one call to the `tasklet` can be scheduled, if the `tasklet` is called a second time only one instance is executed. In our case we implemented a while loop inside the `Rx_tsaklet` function in which we read data continually from the `rx_buffer` and send it up to the top layer.
+In contrary to what their name implies, `tasklets` are not small tasks/threads, they are simply a mechanism that allows `ISRs` to execute a non-critical portion of the code outside its context. The `tasklet` is executed asap after the `ISR` is ended. Yet, only one call to the `tasklet` can be scheduled, if the `tasklet` is called a second time, only one instance is executed. In our case we implemented a while loop inside the `Rx_tsaklet` function in which we read data continually from the `rx_buffer` and send it up to the top layer.
 
  ```c
 void rx_tasklet_function(unsigned long data)
@@ -314,3 +314,13 @@ For me, I think we are done with this first part, long part, I will implement th
 See you in the next part.
 
 A.L
+
+### Références 
+
+Raspberry Pi uarts : [https://www.raspberrypi.org/documentation/configuration/uart.md](https://www.raspberrypi.org/documentation/configuration/uart.md)
+
+Timing Errors in Serial Communication: [http://www.robotroom.com/Asynchronous-SerialCommunication-2.html](http://www.robotroom.com/Asynchronous-SerialCommunication-2.html)
+
+Linux serial driver : [https://bootlin.com/doc/legacy/serial-drivers/linux-serial-drivers.pdf](https://bootlin.com/doc/legacy/serial-drivers/linux-serial-drivers.pdf)
+
+Chapter 18. TTY Drivers : [https://www.oreilly.com/library/view/linux-devicedrivers/0596005903/ch18.html](https://www.oreilly.com/library/view/linux-devicedrivers/0596005903/ch18.html)
