@@ -12,11 +12,11 @@ The ``RPi`` is a well-known platform intended for educational use. For its compa
 
 In many cases, the sensors that are used, adopts a communication protocol such as `SPI, UART, I2C` for wired communication, or wireless using protocols such as `Bluetooth` and `ZigBee`. The most adopted, and easy to use of serial protocols is the Universal Asynchronous Receiver-Transmitter (`UART` for short).
 
-Unfortunately, all versions of the `RPi` until version 3, comes with [only two UART ports](https://www.blogger.com/blog/post/edit/1828726825959781021/5433115005355325235) : A full featured `UART` (PL011) enabled by default (GPIO's 14 and 15), and a mini `UART` with a reduced feature set (used by the wireless LAN/Bluetooth controller, on models which contain this controller) that necessitate some tweaking to get it working at first (modification of the Device Tree Overlay basically). This hardware limitation of the `RPi` can be a complication for projects that needs more than the two `UART` ports, especially for `RPi` models that doesn't have much of peripherals (eg. `RPi` Zero).
+Unfortunately, all versions of the `RPi` until version 3, comes with [only two UART ports](https://www.raspberrypi.org/documentation/configuration/uart.md) : A full featured `UART` (PL011) enabled by default (GPIO's 14 and 15), and a mini `UART` with a reduced feature set (used by the wireless LAN/Bluetooth controller, on models which contain this controller) that necessitate some tweaking to get it working at first (modification of the Device Tree Overlay basically). This hardware limitation of the `RPi` can be a complication for projects that needs more than the two `UART` ports, especially for `RPi` models that doesn't have much of peripherals (eg. `RPi` Zero).
 
 The idea behind this project, comes to tackle this specific problem by creating a software `UART` compatible with all Linux based boards including the `RPi`. Because it's a software implementation, it has only the minimal features required to establish a reliable serial connection. As you will find throughout this 2-parts write up, the software implementation obviously can't compete with the real hardware port, nevertheless, it offers a decent alternative.
 
-You’ll find all the written code in my **[Github](https://www.blogger.com/blog/post/edit/1828726825959781021/5433115005355325235)**.
+You’ll find all the written code in my **[Github](https://github.com/lakabd/Software-UART-linux-driver)**.
 
 ## Linux driver
 
