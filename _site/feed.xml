@@ -6,8 +6,8 @@
 </description>
     <link>https://lakabd.github.io/</link>
     <atom:link href="https://lakabd.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Tue, 10 Nov 2020 16:41:59 +0100</pubDate>
-    <lastBuildDate>Tue, 10 Nov 2020 16:41:59 +0100</lastBuildDate>
+    <pubDate>Thu, 10 Dec 2020 21:18:31 +0100</pubDate>
+    <lastBuildDate>Thu, 10 Dec 2020 21:18:31 +0100</lastBuildDate>
     <generator>Jekyll v3.1.6</generator>
     
       <item>
@@ -734,7 +734,7 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
 
 &lt;p&gt;A.L&lt;/p&gt;
 
-&lt;h3 id=&quot;références&quot;&gt;Références&lt;/h3&gt;
+&lt;h3 id=&quot;references&quot;&gt;References&lt;/h3&gt;
 
 &lt;p&gt;Low Level Serial API : &lt;a href=&quot;https://www.kernel.org/doc/Documentation/serial/driver&quot;&gt;https://www.kernel.org/doc/Documentation/serial/driver&lt;/a&gt;&lt;/p&gt;
 
@@ -1064,7 +1064,7 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
 
 &lt;p&gt;A.L&lt;/p&gt;
 
-&lt;h3 id=&quot;références&quot;&gt;Références&lt;/h3&gt;
+&lt;h3 id=&quot;references&quot;&gt;References&lt;/h3&gt;
 
 &lt;p&gt;Raspberry Pi uarts : &lt;a href=&quot;https://www.raspberrypi.org/documentation/configuration/uart.md&quot;&gt;https://www.raspberrypi.org/documentation/configuration/uart.md&lt;/a&gt;&lt;/p&gt;
 
