@@ -6,8 +6,8 @@
 </description>
     <link>https://lakabd.github.io/</link>
     <atom:link href="https://lakabd.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Thu, 10 Dec 2020 21:18:31 +0100</pubDate>
-    <lastBuildDate>Thu, 10 Dec 2020 21:18:31 +0100</lastBuildDate>
+    <pubDate>Mon, 04 Jan 2021 03:55:39 +0100</pubDate>
+    <lastBuildDate>Mon, 04 Jan 2021 03:55:39 +0100</lastBuildDate>
     <generator>Jekyll v3.1.6</generator>
     
       <item>
@@ -762,11 +762,11 @@ COMPATIBLE_MACHINE_beaglebone = &quot;beaglebone&quot;
 
 &lt;p&gt;In many cases, the sensors that are used, adopts a communication protocol such as &lt;code class=&quot;highlighter-rouge&quot;&gt;SPI, UART, I2C&lt;/code&gt; for wired communication, or wireless using protocols such as &lt;code class=&quot;highlighter-rouge&quot;&gt;Bluetooth&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;ZigBee&lt;/code&gt;. The most adopted, and easy to use of serial protocols is the Universal Asynchronous Receiver-Transmitter (&lt;code class=&quot;highlighter-rouge&quot;&gt;UART&lt;/code&gt; for short).&lt;/p&gt;
 
-&lt;p&gt;Unfortunately, all versions of the &lt;code class=&quot;highlighter-rouge&quot;&gt;RPi&lt;/code&gt; until version 3, comes with &lt;a href=&quot;https://www.blogger.com/blog/post/edit/1828726825959781021/5433115005355325235&quot;&gt;only two UART ports&lt;/a&gt; : A full featured &lt;code class=&quot;highlighter-rouge&quot;&gt;UART&lt;/code&gt; (PL011) enabled by default (GPIO’s 14 and 15), and a mini &lt;code class=&quot;highlighter-rouge&quot;&gt;UART&lt;/code&gt; with a reduced feature set (used by the wireless LAN/Bluetooth controller, on models which contain this controller) that necessitate some tweaking to get it working at first (modification of the Device Tree Overlay basically). This hardware limitation of the &lt;code class=&quot;highlighter-rouge&quot;&gt;RPi&lt;/code&gt; can be a complication for projects that needs more than the two &lt;code class=&quot;highlighter-rouge&quot;&gt;UART&lt;/code&gt; ports, especially for &lt;code class=&quot;highlighter-rouge&quot;&gt;RPi&lt;/code&gt; models that doesn’t have much of peripherals (eg. &lt;code class=&quot;highlighter-rouge&quot;&gt;RPi&lt;/code&gt; Zero).&lt;/p&gt;
+&lt;p&gt;Unfortunately, all versions of the &lt;code class=&quot;highlighter-rouge&quot;&gt;RPi&lt;/code&gt; until version 3, comes with &lt;a href=&quot;https://www.raspberrypi.org/documentation/configuration/uart.md&quot;&gt;only two UART ports&lt;/a&gt; : A full featured &lt;code class=&quot;highlighter-rouge&quot;&gt;UART&lt;/code&gt; (PL011) enabled by default (GPIO’s 14 and 15), and a mini &lt;code class=&quot;highlighter-rouge&quot;&gt;UART&lt;/code&gt; with a reduced feature set (used by the wireless LAN/Bluetooth controller, on models which contain this controller) that necessitate some tweaking to get it working at first (modification of the Device Tree Overlay basically). This hardware limitation of the &lt;code class=&quot;highlighter-rouge&quot;&gt;RPi&lt;/code&gt; can be a complication for projects that needs more than the two &lt;code class=&quot;highlighter-rouge&quot;&gt;UART&lt;/code&gt; ports, especially for &lt;code class=&quot;highlighter-rouge&quot;&gt;RPi&lt;/code&gt; models that doesn’t have much of peripherals (eg. &lt;code class=&quot;highlighter-rouge&quot;&gt;RPi&lt;/code&gt; Zero).&lt;/p&gt;
 
 &lt;p&gt;The idea behind this project, comes to tackle this specific problem by creating a software &lt;code class=&quot;highlighter-rouge&quot;&gt;UART&lt;/code&gt; compatible with all Linux based boards including the &lt;code class=&quot;highlighter-rouge&quot;&gt;RPi&lt;/code&gt;. Because it’s a software implementation, it has only the minimal features required to establish a reliable serial connection. As you will find throughout this 2-parts write up, the software implementation obviously can’t compete with the real hardware port, nevertheless, it offers a decent alternative.&lt;/p&gt;
 
-&lt;p&gt;You’ll find all the written code in my &lt;strong&gt;&lt;a href=&quot;https://www.blogger.com/blog/post/edit/1828726825959781021/5433115005355325235&quot;&gt;Github&lt;/a&gt;&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;You’ll find all the written code in my &lt;strong&gt;&lt;a href=&quot;https://github.com/lakabd/Software-UART-linux-driver&quot;&gt;Github&lt;/a&gt;&lt;/strong&gt;.&lt;/p&gt;
 
 &lt;h2 id=&quot;linux-driver&quot;&gt;Linux driver&lt;/h2&gt;
 
